@@ -69,7 +69,7 @@ async def putflag_order_dispatch(
     order_id = checkout_resp.json().get("order_id")
     await db.set("order_id", order_id)
     await db.set("token", token)
-    return order_id
+    return str(order_id)
 
 
 @checker.getflag(0)

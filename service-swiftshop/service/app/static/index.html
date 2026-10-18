@@ -246,6 +246,7 @@
         <button class="nav-btn" onclick="switchTab('orders')">My Orders</button>
         <button class="nav-btn" onclick="switchTab('dispatch')">Track Dispatch</button>
         <button class="nav-btn" onclick="switchTab('vouchers')">Gift Vouchers</button>
+        <button class="nav-btn" onclick="switchTab('vault')">Executive Vault</button>
       </div>
       <div id="authSection" style="display: flex; align-items: center; gap: 1rem;">
         <button class="btn btn-secondary" onclick="openModal('authModal')">Sign In</button>
@@ -308,7 +309,7 @@
         Enter any shipment order reference to inspect courier dispatch state and destination details.
       </p>
       <div style="max-width: 500px; margin-bottom: 2rem; display: flex; gap: 0.6rem;">
-        <input type="text" id="trackInput" class="form-input" placeholder="Enter Order ID (e.g. ORD-1002)" />
+        <input type="text" id="trackInput" class="form-input" placeholder="Enter Order Number (e.g. 1, 2, ...)" />
         <button class="btn btn-primary" onclick="lookupDispatch()">Track</button>
       </div>
       <div id="dispatchResult" style="display: none; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; max-width: 650px;"></div>
@@ -335,6 +336,40 @@
           </div>
           <button class="btn btn-primary" onclick="redeemVoucher()">Apply Voucher</button>
         </div>
+      </div>
+    </section>
+
+    <!-- Executive Vault Tab -->
+    <section id="tab-vault" class="tab-content">
+      <h2 style="margin-bottom: 1rem; font-weight: 600;">Executive Vault & Digital Assets</h2>
+      <p style="color: var(--muted); margin-bottom: 1.5rem; font-size: 0.95rem;">
+        High-priority assets restricted to verified Executive Account holders.
+      </p>
+
+      <div id="vaultRestrictedBox" style="background: var(--card-bg); border: 1px solid #78350f; border-radius: 8px; padding: 2rem; text-align: center;">
+        <div style="font-size: 2rem; margin-bottom: 0.5rem;">🔒</div>
+        <h3 style="color: #fde68a; margin-bottom: 0.5rem;">Access Restricted</h3>
+        <p style="color: var(--muted); font-size: 0.9rem; max-width: 500px; margin: 0 auto;">
+          Your account is currently <strong id="vaultCurrentTier">STANDARD</strong> tier. Access requires an executive promo voucher.
+        </p>
+      </div>
+
+      <div id="vaultUnlockedBox" style="display: none;">
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Asset ID</th>
+                <th>Title</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="vaultItemsBody">
+              <tr><td colspan="3" style="text-align: center; color: var(--muted);">Loading vault assets...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div id="vaultAssetDetails" style="margin-top: 1.5rem; display: none; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem;"></div>
       </div>
     </section>
   </main>
@@ -412,6 +447,7 @@
       if (targetBtn) targetBtn.classList.add("active");
 
       if (tabId === "orders") loadOrders();
+      if (tabId === "vault") loadVault();
     }
 
     function openModal(id) { document.getElementById(id).classList.add("active"); }
@@ -599,7 +635,7 @@
         if (data.status === "success") {
           resultDiv.innerHTML = `<div style="background: #0f172a; border: 1px solid var(--border); border-radius: 6px; padding: 1rem;">${data.rendered_html}</div>`;
         } else {
-          resultDiv.innerHTML = `<div style="color: var(--danger); font-size: 0.9rem;">${data.message}</div>`;
+          resultDiv.innerHTML = `<div style="color: var(--danger); font-size: 0.9rem;">${data.detail || data.message || "Unauthorized order access"}</div>`;
         }
       } catch (err) {
         notify("Invoice compilation failed", true);
@@ -658,6 +694,72 @@
         initSession();
       } catch (err) {
         notify(err.message, true);
+      }
+    }
+
+    async function loadVault() {
+      if (!currentUser && authToken) {
+        await initSession();
+      }
+      if (!currentUser) {
+        document.getElementById("vaultRestrictedBox").style.display = "block";
+        document.getElementById("vaultUnlockedBox").style.display = "none";
+        document.getElementById("vaultRestrictedBox").innerHTML = `
+          <div style="font-size: 2rem; margin-bottom: 0.5rem;">🔒</div>
+          <h3 style="color: #fde68a; margin-bottom: 0.5rem;">Authentication Required</h3>
+          <p style="color: var(--muted); font-size: 0.9rem; max-width: 500px; margin: 0 auto 1.5rem;">
+            Please sign in to access the Executive Vault.
+          </p>
+          <button class="btn btn-primary" onclick="openModal('authModal')">Sign In</button>
+        `;
+        return;
+      }
+      document.getElementById("vaultCurrentTier").textContent = currentUser.tier.toUpperCase();
+      if (currentUser.tier === "executive") {
+        document.getElementById("vaultRestrictedBox").style.display = "none";
+        document.getElementById("vaultUnlockedBox").style.display = "block";
+        fetchVaultItems();
+      } else {
+        document.getElementById("vaultRestrictedBox").style.display = "block";
+        document.getElementById("vaultUnlockedBox").style.display = "none";
+      }
+    }
+
+    async function fetchVaultItems() {
+      try {
+        const res = await fetch("/api/vault/recent");
+        const items = await res.json();
+        const tbody = document.getElementById("vaultItemsBody");
+        if (!items.length) {
+          tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--muted);">No vault assets deposited yet.</td></tr>`;
+          return;
+        }
+        tbody.innerHTML = items.map(i => `
+          <tr>
+            <td style="font-family: monospace; font-weight: 600; color: #f59e0b;">${i.vault_id}</td>
+            <td>${i.title}</td>
+            <td>
+              <button class="btn btn-primary" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;" onclick="viewVaultItem('${i.vault_id}')">Access Secret</button>
+            </td>
+          </tr>
+        `).join("");
+      } catch {}
+    }
+
+    async function viewVaultItem(vaultId) {
+      try {
+        const res = await fetch(`/api/vault/${vaultId}`, {
+          headers: { "Authorization": `Bearer ${authToken}` }
+        });
+        const data = await res.json();
+        const box = document.getElementById("vaultAssetDetails");
+        box.style.display = "block";
+        box.innerHTML = `
+          <h4 style="color: #f59e0b; margin-bottom: 0.5rem;">Vault Asset: ${data.title} (${data.vault_id})</h4>
+          <div class="code-box">${data.access_token}</div>
+        `;
+      } catch (err) {
+        notify("Failed to retrieve vault asset", true);
       }
     }
 

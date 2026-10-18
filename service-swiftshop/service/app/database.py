@@ -42,7 +42,7 @@ class Product(Base):
 class Order(Base):
     __tablename__ = "orders"
 
-    id = Column(String(36), primary_key=True, default=lambda: f"ORD-{uuid.uuid4().hex[:8].upper()}")
+    id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     item_sku = Column(String(32), nullable=False)
     total_amount = Column(Float, nullable=False)
@@ -74,6 +74,10 @@ class ExecutiveVaultItem(Base):
     access_token = Column(Text, nullable=False)
     tier_required = Column(String(32), default="executive")
 
+class RedeemedVoucher(Base):
+    __tablename__ = "redeemed_vouchers"
+    id = Column(Integer, primary_key=True, index=True)
+    voucher_sig = Column(String(64), unique=True, nullable=False)
 
 def get_db():
     db = SessionLocal()

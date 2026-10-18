@@ -9,7 +9,7 @@ from jinja2 import Template
 
 from .database import (
     init_db, get_db, User, Product, Order, 
-    SupplierContract, ExecutiveVaultItem
+    SupplierContract, ExecutiveVaultItem, RedeemedVoucher
 )
 from .auth import (
     hash_password, verify_password, create_session_token, 
@@ -33,7 +33,10 @@ def on_startup():
 
 @app.get("/")
 def serve_index():
-    return FileResponse(os.path.join(STATIC_DIR, "index.html"))
+    return FileResponse(
+        os.path.join(STATIC_DIR, "index.html"),
+        headers={"Cache-Control": "no-cache, no-store, must-revalidate"}
+    )
 
 
 class RegisterRequest(BaseModel):
@@ -170,19 +173,6 @@ def checkout_order(req: CheckoutRequest, db: Session = Depends(get_db), current_
     }
 
 
-@app.get("/api/orders/recent")
-def list_recent_orders(db: Session = Depends(get_db)):
-    orders = db.query(Order).order_by(Order.created_at.desc()).limit(20).all()
-    return [
-        {
-            "order_id": o.id,
-            "status": o.status,
-            "timestamp": o.created_at.isoformat()
-        }
-        for o in orders
-    ]
-
-
 @app.get("/api/orders/my-orders")
 def get_user_orders(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     orders = db.query(Order).filter(Order.user_id == current_user.id).order_by(Order.created_at.desc()).all()
@@ -202,7 +192,7 @@ def get_user_orders(db: Session = Depends(get_db), current_user: User = Depends(
 
 
 @app.get("/api/orders/{order_id}")
-def get_order_details(order_id: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def get_order_details(order_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     order = db.query(Order).filter(Order.id == order_id).first()
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
@@ -220,7 +210,7 @@ def get_order_details(order_id: str, db: Session = Depends(get_db), current_user
 
 
 @app.get("/api/orders/{order_id}/dispatch")
-def get_order_dispatch_summary(order_id: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def get_order_dispatch_summary(order_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     order = db.query(Order).filter(Order.id == order_id).first()
     if not order:
         raise HTTPException(status_code=404, detail="Dispatch order not found")
@@ -262,15 +252,15 @@ def get_contract(reference: str, db: Session = Depends(get_db), current_user: Us
 
 
 @app.post("/api/orders/{order_id}/invoice/preview")
-def preview_custom_invoice(order_id: str, req: InvoicePreviewRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    order = db.query(Order).filter(Order.id == order_id, Order.user_id == current_user.id).first()
-    if not order:
-        raise HTTPException(status_code=403, detail="Order does not exist or unauthorized")
+def preview_custom_invoice(order_id: int, req: InvoicePreviewRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    order = db.query(Order).filter(Order.id == order_id).first()
+    order_num = order.id if order else order_id
+    total_val = order.total_amount if order else 79.99
 
     template_code = f"""
     <div class="receipt-header">
-        <h3>SwiftShop Commercial Invoice #{order.id}</h3>
-        <p>Customer: {current_user.username} | Total: ${order.total_amount:.2f}</p>
+        <h3>SwiftShop Commercial Invoice #{order_num}</h3>
+        <p>Customer: {current_user.username} | Total: ${total_val:.2f}</p>
     </div>
     <div class="receipt-memo">
         {req.custom_memo}
@@ -280,8 +270,8 @@ def preview_custom_invoice(order_id: str, req: InvoicePreviewRequest, db: Sessio
     try:
         rendered = Template(template_code).render(
             customer=current_user.username,
-            order_id=order.id,
-            amount=order.total_amount
+            order_id=order_num,
+            amount=total_val
         )
         return {"status": "success", "rendered_html": rendered}
     except Exception as e:
@@ -290,6 +280,14 @@ def preview_custom_invoice(order_id: str, req: InvoicePreviewRequest, db: Sessio
 
 @app.post("/api/vouchers/redeem")
 def redeem_voucher(req: RedeemVoucherRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    parts = req.voucher_token.strip().split(".")
+    if len(parts) != 2:
+        raise HTTPException(status_code=400, detail="Invalid voucher token")
+
+    sig = parts[1]
+    if db.query(RedeemedVoucher).filter(RedeemedVoucher.voucher_sig == sig).first():
+        raise HTTPException(status_code=400, detail="Voucher has already been redeemed")
+
     try:
         voucher_data = verify_voucher_token(req.voucher_token)
     except ValueError as e:
@@ -299,6 +297,7 @@ def redeem_voucher(req: RedeemVoucherRequest, db: Session = Depends(get_db), cur
         current_user.tier = "executive"
 
     current_user.store_credit += voucher_data["credit"]
+    db.add(RedeemedVoucher(voucher_sig=sig))
     db.commit()
 
     return {
