@@ -4,17 +4,18 @@ from datetime import datetime
 from sqlalchemy import create_engine, Column, Integer, String, Text, Float, DateTime, ForeignKey, Boolean
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 
+DB_PATH = os.environ.get("DB_PATH", "/data/swiftshop.db")
+DATABASE_URL = f"sqlite:///{DB_PATH}"
+
 engine = create_engine(
     DATABASE_URL,
-    connect_arg={"check_same_thread": False}
+    connect_args={"check_same_thread": False}
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
+
 class User(Base):
-    """
-    Stores registered customers and corporate buyers.
-    """
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -23,13 +24,11 @@ class User(Base):
     tier = Column(String(32), default="standard")
     store_credit = Column(Integer, default=10)
     created_at = Column(DateTime, default=datetime.utcnow)
+
     orders = relationship("Order", back_populates="user")
 
 
 class Product(Base):
-    """
-    Store catalog items available for browsing and checkout.
-    """
     __tablename__ = "products"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -39,10 +38,8 @@ class Product(Base):
     price = Column(Float, nullable=False)
     is_executive_only = Column(Boolean, default=False)
 
+
 class Order(Base):
-    """
-    Customer orders placed through the checkout workflow.
-    """
     __tablename__ = "orders"
 
     id = Column(String(36), primary_key=True, default=lambda: f"ORD-{uuid.uuid4().hex[:8].upper()}")
@@ -52,7 +49,6 @@ class Order(Base):
     recipient_name = Column(String(128), nullable=False)
     delivery_address = Column(String(256), nullable=False)
     delivery_instructions = Column(Text, nullable=True)
-
     status = Column(String(32), default="dispatched")
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -60,9 +56,6 @@ class Order(Base):
 
 
 class SupplierContract(Base):
-    """
-    Confidential internal business contracts and audit memos.
-    """
     __tablename__ = "supplier_contracts"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -72,16 +65,15 @@ class SupplierContract(Base):
     authorized_signer = Column(String(128), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+
 class ExecutiveVaultItem(Base):
-    """
-    Exclusive high-tier digital assets reserved for verified executive accounts.
-    """
     __tablename__ = "executive_vault"
 
     id = Column(String(64), primary_key=True)
     title = Column(String(128), nullable=False)
     access_token = Column(Text, nullable=False)
     tier_required = Column(String(32), default="executive")
+
 
 def get_db():
     db = SessionLocal()
@@ -99,18 +91,12 @@ def init_db():
     try:
         if db.query(Product).count() == 0:
             catalog = [
-                Product(sku="PRD-101", name="Wireless Mechanical Keyboard",
-                        description="RGB backlit with hot-swappable switches", price=79.99),
-                Product(sku="PRD-102", name="Precision Optical Mouse", description="16000 DPI gaming-grade sensor",
-                        price=49.99),
-                Product(sku="PRD-103", name="USB-C Dual 4K Docking Station",
-                        description="Power delivery up to 100W with Gigabit Ethernet",
-                        price=129.99),
-                Product(sku="PRD-104", name="Noise-Cancelling Studio Headset",
-                        description="Custom tuned 50mm neodymium drivers", price=89.99)
-                ]
+                Product(sku="PRD-101", name="Wireless Mechanical Keyboard", description="RGB backlit with hot-swappable switches", price=79.99),
+                Product(sku="PRD-102", name="Precision Optical Mouse", description="16000 DPI gaming-grade sensor", price=49.99),
+                Product(sku="PRD-103", name="USB-C Dual 4K Docking Station", description="Power delivery up to 100W with Gigabit Ethernet", price=129.99),
+                Product(sku="PRD-104", name="Noise-Cancelling Studio Headset", description="Custom tuned 50mm neodymium drivers", price=89.99)
+            ]
             db.add_all(catalog)
             db.commit()
     finally:
         db.close()
-

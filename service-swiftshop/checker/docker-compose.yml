@@ -1,0 +1,22 @@
+services:
+  swiftshop-checker:
+    build: .
+    ports:
+      - "18003:8000"
+    environment:
+      - MONGO_HOST=swiftshop-mongo
+      - MONGO_PORT=27017
+      - MONGO_USER=swiftshop
+      - MONGO_PASSWORD=swiftshop
+    depends_on:
+      - swiftshop-mongo
+    restart: unless-stopped
+
+  swiftshop-mongo:
+    image: mongo:7
+    volumes:
+      - ./data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: swiftshop
+      MONGO_INITDB_ROOT_PASSWORD: swiftshop
+    restart: unless-stopped

@@ -1,0 +1,16 @@
+services:
+  swiftshop:
+    build: .
+    container_name: service-swiftshop
+    ports:
+      - "8003:8003"
+    environment:
+      - DB_PATH=/data/swiftshop.db
+      - SESSION_SECRET=swiftshop_session_auth_key_2026
+      - VOUCHER_SECRET=shop_merchant_promokey_prod_32b!
+    volumes:
+      - swiftshop_data:/data
+    restart: unless-stopped
+
+volumes:
+  swiftshop_data:

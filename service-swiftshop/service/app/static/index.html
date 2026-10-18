@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SwiftShop - Modern Hardware & Logistics</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --border: #334155;
+      --primary: #38bdf8;
+      --primary-hover: #0284c7;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #10b981;
+      --danger: #ef4444;
+      --gold: #f59e0b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background-color: rgba(30, 41, 59, 0.85);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--primary);
+      text-decoration: none;
+    }
+    .nav-links {
+      display: flex;
+      gap: 1.5rem;
+      align-items: center;
+    }
+    .nav-btn {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 0.4rem 0.8rem;
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+    .nav-btn:hover, .nav-btn.active {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .badge-tier {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.25rem 0.6rem;
+      border-radius: 9999px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .badge-standard { background: #334155; color: #cbd5e1; }
+    .badge-executive { background: #78350f; color: #fde68a; border: 1px solid #d97706; }
+    
+    main {
+      max-width: 1200px;
+      margin: 2rem auto;
+      padding: 0 1.5rem;
+      flex: 1;
+      width: 100%;
+    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1.5rem;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+    .card-desc {
+      color: var(--muted);
+      font-size: 0.88rem;
+      margin-bottom: 1rem;
+      line-height: 1.4;
+      flex: 1;
+    }
+    .card-price {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 1rem;
+    }
+    
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.6rem 1rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-primary { background: var(--primary); color: #0f172a; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-secondary { background: #334155; color: var(--text); }
+    .btn-secondary:hover { background: #475569; }
+    
+    .form-group {
+      margin-bottom: 1.2rem;
+    }
+    .form-group label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--muted);
+      margin-bottom: 0.4rem;
+    }
+    .form-input, .form-textarea {
+      width: 100%;
+      background: #0f172a;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      padding: 0.65rem 0.85rem;
+      font-size: 0.95rem;
+      font-family: inherit;
+    }
+    .form-input:focus, .form-textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    
+    .modal {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+    }
+    .modal.active { display: flex; }
+    .modal-box {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem;
+      max-width: 480px;
+      width: 90%;
+    }
+    
+    .table-container {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--card-bg);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+    th, td {
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.9rem;
+    }
+    th {
+      background: rgba(15, 23, 42, 0.6);
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .code-box {
+      font-family: monospace;
+      background: #090d16;
+      border: 1px solid var(--border);
+      padding: 0.8rem;
+      border-radius: 6px;
+      color: #38bdf8;
+      word-break: break-all;
+      font-size: 0.85rem;
+    }
+    .notification {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.4rem;
+      display: none;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+      z-index: 300;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="nav-container">
+      <a href="#" class="brand" onclick="switchTab('catalog')">
+        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        SwiftShop
+      </a>
+      <div class="nav-links">
+        <button class="nav-btn active" onclick="switchTab('catalog')">Products</button>
+        <button class="nav-btn" onclick="switchTab('orders')">My Orders</button>
+        <button class="nav-btn" onclick="switchTab('dispatch')">Track Dispatch</button>
+        <button class="nav-btn" onclick="switchTab('vouchers')">Gift Vouchers</button>
+      </div>
+      <div id="authSection" style="display: flex; align-items: center; gap: 1rem;">
+        <button class="btn btn-secondary" onclick="openModal('authModal')">Sign In</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Catalog Tab -->
+    <section id="tab-catalog" class="tab-content active">
+      <h2 style="margin-bottom: 1.5rem; font-weight: 600;">Hardware & Infrastructure Catalog</h2>
+      <div class="grid" id="productsGrid">
+        <div style="color: var(--muted);">Loading catalog items...</div>
+      </div>
+    </section>
+
+    <!-- My Orders Tab -->
+    <section id="tab-orders" class="tab-content">
+      <h2 style="margin-bottom: 1.5rem; font-weight: 600;">My Placed Orders & Invoices</h2>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Order Ref</th>
+              <th>SKU</th>
+              <th>Total</th>
+              <th>Status</th>
+              <th>Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="ordersTableBody">
+            <tr><td colspan="6" style="text-align: center; color: var(--muted);">Please sign in to view your orders.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div style="margin-top: 2.5rem; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem;">
+        <h3 style="margin-bottom: 1rem;">Invoice Memo Customizer</h3>
+        <p style="color: var(--muted); font-size: 0.9rem; margin-bottom: 1rem;">
+          Business customers can preview personalized closing memos on their digital receipts.
+        </p>
+        <div class="form-group">
+          <label>Target Order Reference</label>
+          <input type="text" id="invoiceOrderId" class="form-input" placeholder="e.g. ORD-B21A0F" />
+        </div>
+        <div class="form-group">
+          <label>Custom Closing Memo</label>
+          <textarea id="invoiceMemo" class="form-textarea" rows="3" placeholder="Thank you for partnering with us. Business Reg #109283"></textarea>
+        </div>
+        <button class="btn btn-primary" onclick="previewInvoice()">Generate Invoice Preview</button>
+        <div id="invoicePreviewResult" style="margin-top: 1rem; display: none;"></div>
+      </div>
+    </section>
+
+    <!-- Dispatch Tracking Tab -->
+    <section id="tab-dispatch" class="tab-content">
+      <h2 style="margin-bottom: 1rem; font-weight: 600;">Courier Logistics & Dispatch Verification</h2>
+      <p style="color: var(--muted); margin-bottom: 1.5rem; font-size: 0.95rem;">
+        Enter any shipment order reference to inspect courier dispatch state and destination details.
+      </p>
+      <div style="max-width: 500px; margin-bottom: 2rem; display: flex; gap: 0.6rem;">
+        <input type="text" id="trackInput" class="form-input" placeholder="Enter Order ID (e.g. ORD-1002)" />
+        <button class="btn btn-primary" onclick="lookupDispatch()">Track</button>
+      </div>
+      <div id="dispatchResult" style="display: none; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; max-width: 650px;"></div>
+    </section>
+
+    <!-- Vouchers Tab -->
+    <section id="tab-vouchers" class="tab-content">
+      <h2 style="margin-bottom: 1.5rem; font-weight: 600;">Promotional Vouchers & Loyalty Credits</h2>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+        <div class="card">
+          <h3 style="margin-bottom: 0.8rem;">Your Active Voucher</h3>
+          <p style="color: var(--muted); font-size: 0.88rem; margin-bottom: 1rem;">
+            Welcome promo voucher issued with your account credentials.
+          </p>
+          <div id="activeVoucherBox" class="code-box">Sign in to view your token</div>
+        </div>
+        <div class="card">
+          <h3 style="margin-bottom: 0.8rem;">Redeem Gift Card</h3>
+          <p style="color: var(--muted); font-size: 0.88rem; margin-bottom: 1rem;">
+            Enter a signed partner voucher token to credit your store balance or elevate tier.
+          </p>
+          <div class="form-group">
+            <textarea id="voucherInput" class="form-textarea" rows="2" placeholder="Paste voucher token here"></textarea>
+          </div>
+          <button class="btn btn-primary" onclick="redeemVoucher()">Apply Voucher</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Checkout Modal -->
+  <div id="checkoutModal" class="modal">
+    <div class="modal-box">
+      <h3 style="margin-bottom: 1.2rem;">Complete Checkout</h3>
+      <div class="form-group">
+        <label>Selected Item SKU</label>
+        <input type="text" id="checkoutSku" class="form-input" readonly />
+      </div>
+      <div class="form-group">
+        <label>Recipient Full Name</label>
+        <input type="text" id="recipientName" class="form-input" placeholder="Alex Morgan" />
+      </div>
+      <div class="form-group">
+        <label>Shipping Address</label>
+        <input type="text" id="deliveryAddress" class="form-input" placeholder="742 Evergreen Terrace, Sector 4" />
+      </div>
+      <div class="form-group">
+        <label>Special Delivery Instructions</label>
+        <textarea id="deliveryInstructions" class="form-textarea" rows="2" placeholder="Gate access instructions or confidential security code"></textarea>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 0.8rem; margin-top: 1.5rem;">
+        <button class="btn btn-secondary" onclick="closeModal('checkoutModal')">Cancel</button>
+        <button class="btn btn-primary" onclick="submitCheckout()">Confirm Order</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Auth Modal -->
+  <div id="authModal" class="modal">
+    <div class="modal-box">
+      <h3 style="margin-bottom: 1.2rem;" id="authModalTitle">Sign In</h3>
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="authUsername" class="form-input" />
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="authPassword" class="form-input" />
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem;">
+        <a href="#" id="authToggleText" onclick="toggleAuthMode()" style="font-size: 0.85rem; color: var(--primary);">Need an account? Register</a>
+        <div style="display: flex; gap: 0.6rem;">
+          <button class="btn btn-secondary" onclick="closeModal('authModal')">Cancel</button>
+          <button class="btn btn-primary" id="authSubmitBtn" onclick="handleAuth()">Sign In</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="notification" class="notification"></div>
+
+  <script>
+    let authToken = localStorage.getItem("swiftshop_token") || null;
+    let currentUser = null;
+    let isRegisterMode = false;
+
+    function notify(msg, isError = false) {
+      const n = document.getElementById("notification");
+      n.textContent = msg;
+      n.style.borderColor = isError ? "var(--danger)" : "var(--accent)";
+      n.style.display = "block";
+      setTimeout(() => { n.style.display = "none"; }, 3500);
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll(".tab-content").forEach(el => el.classList.remove("active"));
+      document.querySelectorAll(".nav-btn").forEach(el => el.classList.remove("active"));
+      document.getElementById(`tab-${tabId}`).classList.add("active");
+      const btns = Array.from(document.querySelectorAll(".nav-btn"));
+      const targetBtn = btns.find(b => b.textContent.toLowerCase().includes(tabId));
+      if (targetBtn) targetBtn.classList.add("active");
+
+      if (tabId === "orders") loadOrders();
+    }
+
+    function openModal(id) { document.getElementById(id).classList.add("active"); }
+    function closeModal(id) { document.getElementById(id).classList.remove("active"); }
+
+    function toggleAuthMode() {
+      isRegisterMode = !isRegisterMode;
+      document.getElementById("authModalTitle").textContent = isRegisterMode ? "Register New Account" : "Sign In";
+      document.getElementById("authSubmitBtn").textContent = isRegisterMode ? "Register" : "Sign In";
+      document.getElementById("authToggleText").textContent = isRegisterMode ? "Already registered? Sign In" : "Need an account? Register";
+    }
+
+    async function handleAuth() {
+      const u = document.getElementById("authUsername").value.trim();
+      const p = document.getElementById("authPassword").value.trim();
+      if (!u || !p) return notify("Please enter username and password", true);
+
+      const endpoint = isRegisterMode ? "/api/auth/register" : "/api/auth/login";
+      try {
+        const res = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: u, password: p })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Authentication failed");
+
+        authToken = data.token;
+        localStorage.setItem("swiftshop_token", authToken);
+        closeModal("authModal");
+        notify(isRegisterMode ? "Account registered successfully" : "Signed in successfully");
+        initSession();
+      } catch (err) {
+        notify(err.message, true);
+      }
+    }
+
+    function logout() {
+      authToken = null;
+      currentUser = null;
+      localStorage.removeItem("swiftshop_token");
+      updateAuthUI();
+      notify("Logged out");
+    }
+
+    async function initSession() {
+      if (!authToken) { updateAuthUI(); return; }
+      try {
+        const res = await fetch("/api/auth/me", {
+          headers: { "Authorization": `Bearer ${authToken}` }
+        });
+        if (!res.ok) throw new Error();
+        currentUser = await res.json();
+        updateAuthUI();
+        if (currentUser.voucher) {
+          document.getElementById("activeVoucherBox").textContent = currentUser.voucher;
+        }
+      } catch {
+        logout();
+      }
+    }
+
+    function updateAuthUI() {
+      const container = document.getElementById("authSection");
+      if (currentUser) {
+        container.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <span class="badge-tier badge-${currentUser.tier}">${currentUser.tier}</span>
+            <span style="font-weight: 500;">${currentUser.username}</span>
+            <span style="color: var(--accent); font-weight: 600;">$${currentUser.store_credit}</span>
+            <button class="btn btn-secondary" style="padding: 0.35rem 0.7rem; font-size: 0.8rem;" onclick="logout()">Exit</button>
+          </div>
+        `;
+      } else {
+        container.innerHTML = `<button class="btn btn-secondary" onclick="openModal('authModal')">Sign In</button>`;
+      }
+    }
+
+    async function loadProducts() {
+      try {
+        const res = await fetch("/api/catalog/products");
+        const products = await res.json();
+        const grid = document.getElementById("productsGrid");
+        grid.innerHTML = products.map(p => `
+          <div class="card">
+            <div>
+              <div class="card-title">${p.name}</div>
+              <div style="font-size: 0.75rem; color: var(--muted); margin-bottom: 0.5rem;">SKU: ${p.sku}</div>
+              <div class="card-desc">${p.description || ""}</div>
+            </div>
+            <div>
+              <div class="card-price">$${p.price.toFixed(2)}</div>
+              <button class="btn btn-primary" style="width: 100%;" onclick="openCheckout('${p.sku}')">Purchase</button>
+            </div>
+          </div>
+        `).join("");
+      } catch {
+        document.getElementById("productsGrid").innerHTML = `<div style="color: var(--danger);">Failed to load product catalog.</div>`;
+      }
+    }
+
+    function openCheckout(sku) {
+      if (!currentUser) return openModal("authModal");
+      document.getElementById("checkoutSku").value = sku;
+      openModal("checkoutModal");
+    }
+
+    async function submitCheckout() {
+      const payload = {
+        item_sku: document.getElementById("checkoutSku").value,
+        recipient_name: document.getElementById("recipientName").value.trim(),
+        delivery_address: document.getElementById("deliveryAddress").value.trim(),
+        delivery_instructions: document.getElementById("deliveryInstructions").value.trim()
+      };
+      if (!payload.recipient_name || !payload.delivery_address) {
+        return notify("Recipient name and address are required", true);
+      }
+      try {
+        const res = await fetch("/api/orders/checkout", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${authToken}`
+          },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Checkout failed");
+        closeModal("checkoutModal");
+        notify(`Order placed successfully: ${data.order_id}`);
+        switchTab("orders");
+      } catch (err) {
+        notify(err.message, true);
+      }
+    }
+
+    async function loadOrders() {
+      if (!currentUser) return;
+      try {
+        const res = await fetch("/api/orders/my-orders", {
+          headers: { "Authorization": `Bearer ${authToken}` }
+        });
+        const orders = await res.json();
+        const tbody = document.getElementById("ordersTableBody");
+        if (orders.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--muted);">No orders recorded yet.</td></tr>`;
+          return;
+        }
+        tbody.innerHTML = orders.map(o => `
+          <tr>
+            <td style="font-family: monospace; font-weight: 600; color: var(--primary);">${o.order_id}</td>
+            <td>${o.item_sku}</td>
+            <td>$${o.total_amount.toFixed(2)}</td>
+            <td><span style="color: var(--accent);">${o.status}</span></td>
+            <td style="color: var(--muted);">${new Date(o.created_at).toLocaleDateString()}</td>
+            <td>
+              <button class="btn btn-secondary" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;" onclick="fillInvoiceOrder('${o.order_id}')">Select Memo</button>
+            </td>
+          </tr>
+        `).join("");
+      } catch {}
+    }
+
+    function fillInvoiceOrder(orderId) {
+      document.getElementById("invoiceOrderId").value = orderId;
+    }
+
+    async function previewInvoice() {
+      const orderId = document.getElementById("invoiceOrderId").value.trim();
+      const memo = document.getElementById("invoiceMemo").value;
+      if (!orderId) return notify("Please provide an order reference", true);
+
+      try {
+        const res = await fetch(`/api/orders/${orderId}/invoice/preview`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${authToken}`
+          },
+          body: JSON.stringify({ custom_memo: memo })
+        });
+        const data = await res.json();
+        const resultDiv = document.getElementById("invoicePreviewResult");
+        resultDiv.style.display = "block";
+        if (data.status === "success") {
+          resultDiv.innerHTML = `<div style="background: #0f172a; border: 1px solid var(--border); border-radius: 6px; padding: 1rem;">${data.rendered_html}</div>`;
+        } else {
+          resultDiv.innerHTML = `<div style="color: var(--danger); font-size: 0.9rem;">${data.message}</div>`;
+        }
+      } catch (err) {
+        notify("Invoice compilation failed", true);
+      }
+    }
+
+    async function lookupDispatch() {
+      const id = document.getElementById("trackInput").value.trim();
+      if (!id) return notify("Enter an order ID to track", true);
+
+      try {
+        const res = await fetch(`/api/orders/${id}/dispatch`, {
+          headers: { "Authorization": `Bearer ${authToken}` }
+        });
+        const data = await res.json();
+        const box = document.getElementById("dispatchResult");
+        box.style.display = "block";
+        if (!res.ok) {
+          box.innerHTML = `<div style="color: var(--danger);">${data.detail || "Dispatch record not found"}</div>`;
+          return;
+        }
+        box.innerHTML = `
+          <div style="display: flex; justify-content: space-between; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">
+            <strong>Dispatch Order: ${data.order_id}</strong>
+            <span style="color: var(--accent); text-transform: uppercase;">${data.dispatch_status}</span>
+          </div>
+          <div style="font-size: 0.9rem; line-height: 1.6;">
+            <div><strong>Recipient:</strong> ${data.recipient_name}</div>
+            <div><strong>Address:</strong> ${data.delivery_address}</div>
+            <div style="margin-top: 0.5rem; background: #0f172a; padding: 0.6rem; border-radius: 4px;">
+              <strong>Delivery Instructions:</strong> ${data.delivery_instructions || "None provided"}
+            </div>
+          </div>
+        `;
+      } catch (err) {
+        notify("Dispatch request failed", true);
+      }
+    }
+
+    async function redeemVoucher() {
+      const token = document.getElementById("voucherInput").value.trim();
+      if (!token) return notify("Please enter a voucher token", true);
+
+      try {
+        const res = await fetch("/api/vouchers/redeem", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${authToken}`
+          },
+          body: JSON.stringify({ voucher_token: token })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Failed to redeem voucher");
+        notify(`Voucher accepted! New tier: ${data.upgraded_tier}, Balance: $${data.new_balance}`);
+        initSession();
+      } catch (err) {
+        notify(err.message, true);
+      }
+    }
+
+    // Initialize
+    loadProducts();
+    initSession();
+  </script>
+</body>
+</html>
