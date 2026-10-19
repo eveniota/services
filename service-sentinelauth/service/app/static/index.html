@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SentinelAuth — Enterprise IAM & SSO Gateway</title>
+    <title>CampusPortal — University Integrated Management System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -11,25 +11,33 @@
             theme: {
                 extend: {
                     colors: {
-                        darkbg: '#0a0d14',
-                        darkcard: '#121824',
-                        darkborder: '#1e293b',
+                        darkbg: '#090d16',
+                        darkcard: '#111827',
+                        darkborder: '#1f293d',
+                        academic: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                        }
                     }
                 }
             }
         }
     </script>
 </head>
-<body class="bg-darkbg text-slate-100 min-h-screen font-sans antialiased">
-    <header class="border-b border-darkborder bg-darkcard/80 backdrop-blur sticky top-0 z-50 px-6 py-4">
+<body class="bg-darkbg text-slate-100 min-h-screen font-sans antialiased selection:bg-blue-600 selection:text-white">
+    <!-- Header -->
+    <header class="border-b border-darkborder bg-darkcard/90 backdrop-blur sticky top-0 z-50 px-6 py-4">
         <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
             <div class="flex items-center space-x-3">
-                <span class="text-3xl">🛡️</span>
+                <span class="text-3xl">🎓</span>
                 <div>
                     <h1 class="text-xl font-black tracking-wider text-white uppercase flex items-center gap-2">
-                        SentinelAuth <span class="text-xs bg-indigo-500/20 text-indigo-400 border border-indigo-500/40 px-2 py-0.5 rounded font-mono">IAM Gateway</span>
+                        CampusPortal <span class="text-xs bg-blue-500/20 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded font-mono">Academic ERP</span>
                     </h1>
-                    <p class="text-xs text-slate-400 font-mono">Enterprise Single Sign-On & Token Federation</p>
+                    <p class="text-xs text-slate-400 font-mono">University Integrated Management System & Student Access Gateway</p>
                 </div>
             </div>
 
@@ -37,191 +45,210 @@
                 <div id="user-info-pill" class="hidden items-center space-x-2 bg-slate-900 border border-darkborder px-3 py-1.5 rounded-lg text-xs font-mono">
                     <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                     <span id="user-name" class="font-bold text-white"></span>
-                    <span id="user-role" class="bg-indigo-900/60 text-indigo-300 px-1.5 py-0.5 rounded uppercase text-[10px]"></span>
-                    <button onclick="logout()" class="text-slate-400 hover:text-rose-400 ml-2 font-bold">✕</button>
+                    <span id="user-role" class="bg-blue-900/60 text-blue-300 px-1.5 py-0.5 rounded uppercase text-[10px] font-semibold"></span>
+                    <button onclick="logout()" class="text-slate-400 hover:text-rose-400 ml-2 font-bold" title="Logout">✕</button>
                 </div>
 
                 <div class="flex items-center space-x-2">
-                    <a href="/docs" target="_blank" class="text-xs font-mono bg-slate-800 hover:bg-slate-700 border border-darkborder px-3 py-1.5 rounded transition">Swagger API</a>
-                    <a href="/.well-known/public.pem" target="_blank" class="text-xs font-mono bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded font-bold transition">Public Key</a>
+                    <a href="/docs" target="_blank" class="text-xs font-mono bg-slate-800 hover:bg-slate-700 border border-darkborder px-3 py-1.5 rounded text-slate-300 hover:text-white transition">Swagger API</a>
+                    <a href="/.well-known/public.pem" target="_blank" class="text-xs font-mono bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded font-bold transition">Public Key</a>
                 </div>
             </div>
         </div>
     </header>
 
     <main class="max-w-7xl mx-auto px-6 py-8 space-y-8">
-        <div class="flex border-b border-darkborder space-x-4">
-            <button onclick="switchTab('auth')" id="tab-btn-auth" class="pb-3 px-2 font-bold text-sm text-indigo-400 border-b-2 border-indigo-500 flex items-center gap-2">
-                🔑 Authentication
+        <!-- Tab Navigation -->
+        <div class="flex border-b border-darkborder space-x-2 md:space-x-6 overflow-x-auto pb-1">
+            <button onclick="switchTab('auth')" id="tab-btn-auth" class="pb-3 px-2 font-bold text-sm text-blue-400 border-b-2 border-blue-500 flex items-center gap-2 whitespace-nowrap">
+                <span>🎓</span> Student & Faculty Access
             </button>
-            <button onclick="switchTab('oauth')" id="tab-btn-oauth" class="pb-3 px-2 font-bold text-sm text-slate-400 hover:text-white flex items-center gap-2">
-                🌐 OAuth2 Applications
+            <button onclick="switchTab('oauth')" id="tab-btn-oauth" class="pb-3 px-2 font-bold text-sm text-slate-400 hover:text-white flex items-center gap-2 whitespace-nowrap">
+                <span>🏛️</span> Departmental Portals
             </button>
-            <button onclick="switchTab('vault')" id="tab-btn-vault" class="pb-3 px-2 font-bold text-sm text-slate-400 hover:text-white flex items-center gap-2">
-                🏛️ Executive Vault
+            <button onclick="switchTab('vault')" id="tab-btn-vault" class="pb-3 px-2 font-bold text-sm text-slate-400 hover:text-white flex items-center gap-2 whitespace-nowrap">
+                <span>📜</span> Dean's Examination Vault
             </button>
-            <button onclick="switchTab('recovery')" id="tab-btn-recovery" class="pb-3 px-2 font-bold text-sm text-slate-400 hover:text-white flex items-center gap-2">
-                🚑 Emergency Recovery
+            <button onclick="switchTab('recovery')" id="tab-btn-recovery" class="pb-3 px-2 font-bold text-sm text-slate-400 hover:text-white flex items-center gap-2 whitespace-nowrap">
+                <span>📋</span> Transcript Recovery
             </button>
         </div>
 
+        <!-- Tab 1: Auth & Register -->
         <section id="tab-auth" class="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div class="bg-darkcard border border-darkborder rounded-xl p-6 shadow-xl space-y-4">
-                <h2 class="text-lg font-bold text-white flex items-center gap-2">
-                    <span>📝</span> Register Identity
-                </h2>
+                <div class="border-b border-darkborder pb-3">
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                        <span>📝</span> Register University Identity
+                    </h2>
+                    <p class="text-xs text-slate-400">Enroll new student roll number or faculty credential.</p>
+                </div>
                 <div class="space-y-3">
                     <div>
-                        <label class="block text-xs font-mono text-slate-400 mb-1">Username</label>
-                        <input id="reg-username" type="text" class="w-full bg-slate-900 border border-darkborder rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 font-mono">
+                        <label class="block text-xs font-mono text-slate-400 mb-1">Student / Roll ID or Username</label>
+                        <input id="reg-username" type="text" placeholder="e.g. cs24b001 or prof_sharma" class="w-full bg-slate-900 border border-darkborder rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500 font-mono">
                     </div>
                     <div>
                         <label class="block text-xs font-mono text-slate-400 mb-1">Password</label>
-                        <input id="reg-password" type="password" class="w-full bg-slate-900 border border-darkborder rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 font-mono">
+                        <input id="reg-password" type="password" placeholder="••••••••••••" class="w-full bg-slate-900 border border-darkborder rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500 font-mono">
                     </div>
                     <div>
-                        <label class="block text-xs font-mono text-slate-400 mb-1">Assigned Role</label>
-                        <select id="reg-role" class="w-full bg-slate-900 border border-darkborder rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 font-mono">
-                            <option value="member">member (Standard User)</option>
-                            <option value="superadmin">superadmin (Security Officer)</option>
-                        </select>
+                        <label class="block text-xs font-mono text-slate-400 mb-1">Account Category</label>
+                        <div class="w-full bg-slate-900 border border-darkborder rounded-lg px-3 py-2 text-xs text-blue-400 font-mono flex items-center justify-between">
+                            <span>Student / Faculty Member</span>
+                            <span class="text-[10px] bg-blue-900/40 text-blue-300 px-2 py-0.5 rounded border border-blue-800/50">STANDARD ACCESS</span>
+                        </div>
+                        <input id="reg-role" type="hidden" value="member">
                     </div>
-                    <button onclick="handleRegister()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 rounded-lg transition text-sm">
-                        Create Account
+                    <button onclick="handleRegister()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-lg transition text-sm shadow-lg shadow-blue-600/20">
+                        Enroll & Register
                     </button>
                 </div>
             </div>
 
             <div class="bg-darkcard border border-darkborder rounded-xl p-6 shadow-xl space-y-4">
-                <h2 class="text-lg font-bold text-white flex items-center gap-2">
-                    <span>🔓</span> SSO Login
-                </h2>
+                <div class="border-b border-darkborder pb-3">
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                        <span>🔓</span> University SSO Login
+                    </h2>
+                    <p class="text-xs text-slate-400">Authenticate through university identity gateway.</p>
+                </div>
                 <div class="space-y-3">
                     <div>
-                        <label class="block text-xs font-mono text-slate-400 mb-1">Username</label>
-                        <input id="login-username" type="text" class="w-full bg-slate-900 border border-darkborder rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 font-mono">
+                        <label class="block text-xs font-mono text-slate-400 mb-1">Student / Roll ID or Username</label>
+                        <input id="login-username" type="text" placeholder="e.g. cs24b001" class="w-full bg-slate-900 border border-darkborder rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500 font-mono">
                     </div>
                     <div>
                         <label class="block text-xs font-mono text-slate-400 mb-1">Password</label>
-                        <input id="login-password" type="password" class="w-full bg-slate-900 border border-darkborder rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 font-mono">
+                        <input id="login-password" type="password" placeholder="••••••••••••" class="w-full bg-slate-900 border border-darkborder rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500 font-mono">
                     </div>
-                    <button onclick="handleLogin()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-2 rounded-lg transition border border-darkborder text-sm">
-                        Authenticate & Obtain JWT
+                    <button onclick="handleLogin()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-2.5 rounded-lg transition border border-darkborder text-sm">
+                        Authenticate & Issue Session Token
                     </button>
                 </div>
 
                 <div id="token-box" class="hidden mt-4 pt-4 border-t border-darkborder space-y-2">
                     <div class="flex justify-between items-center">
-                        <span class="text-xs font-mono text-slate-400">Current Session JWT:</span>
-                        <button onclick="copyToken()" class="text-xs text-indigo-400 hover:underline font-mono">Copy</button>
+                        <span class="text-xs font-mono text-slate-400">Active Session Bearer Token:</span>
+                        <button onclick="copyToken()" class="text-xs text-blue-400 hover:underline font-mono">Copy Token</button>
                     </div>
                     <textarea id="active-jwt" readonly rows="3" class="w-full bg-slate-950 border border-darkborder rounded p-2 text-[11px] font-mono text-emerald-400 break-all focus:outline-none"></textarea>
                 </div>
             </div>
         </section>
 
+        <!-- Tab 2: Department Portals & Attendance Logs -->
         <section id="tab-oauth" class="hidden space-y-6">
             <div class="bg-darkcard border border-darkborder rounded-xl p-6 shadow-xl space-y-6">
-                <div class="flex justify-between items-center border-b border-darkborder pb-4">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-darkborder pb-4">
                     <div>
                         <h2 class="text-lg font-bold text-white flex items-center gap-2">
-                            <span>🌐</span> Registered OAuth2 Applications
+                            <span>🏛️</span> Registered Departmental Portals & Gateways
                         </h2>
-                        <p class="text-xs text-slate-400">Client authorization endpoints and security audit trails.</p>
+                        <p class="text-xs text-slate-400">Campus integrations (Central Library, Hostel Affairs, Computer Centre) and attendance audit logs.</p>
                     </div>
-                    <button onclick="openClientPrompt()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-2 rounded-lg transition">
-                        + Register OAuth App
+                    <button onclick="openClientPrompt()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-3 py-2 rounded-lg transition shadow">
+                        + Register Department Portal
                     </button>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="space-y-3">
-                        <h3 class="text-xs font-mono text-slate-400 uppercase">Registered App Client</h3>
+                        <h3 class="text-xs font-mono text-slate-400 uppercase tracking-wide">Department Portal Identifier</h3>
                         <div class="flex gap-2">
-                            <input id="inspect-client-id" type="text" placeholder="client_xxxxxx" class="flex-1 bg-slate-900 border border-darkborder rounded-lg px-3 py-2 text-sm text-white font-mono">
-                            <button onclick="loadAuditLogs()" class="bg-slate-800 hover:bg-slate-700 border border-darkborder px-4 py-2 rounded-lg text-xs font-bold font-mono">Fetch Logs</button>
+                            <input id="inspect-client-id" type="text" placeholder="client_xxxxxx" class="flex-1 bg-slate-900 border border-darkborder rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-blue-500">
+                            <button onclick="loadAuditLogs()" class="bg-slate-800 hover:bg-slate-700 border border-darkborder px-4 py-2 rounded-lg text-xs font-bold font-mono transition text-slate-200">Fetch Logs</button>
                         </div>
+                        <p class="text-[11px] text-slate-500 font-mono">Specify a registered department client ID to view its entry and attendance audit records.</p>
                     </div>
 
                     <div class="space-y-3">
-                        <h3 class="text-xs font-mono text-slate-400 uppercase">Audit Trail Events</h3>
+                        <h3 class="text-xs font-mono text-slate-400 uppercase tracking-wide">Department Access & Attendance Trail</h3>
                         <div id="audit-log-results" class="bg-slate-950 border border-darkborder rounded-lg p-3 min-h-[140px] max-h-[220px] overflow-y-auto text-xs font-mono space-y-2">
-                            <span class="text-slate-600">Enter a client_id and click "Fetch Logs" to view recorded audit events.</span>
+                            <span class="text-slate-600">Enter a Department Portal ID and click "Fetch Logs" to view recorded activity entries.</span>
                         </div>
                     </div>
                 </div>
             </div>
         </section>
 
+        <!-- Tab 3: Dean's Examination Vault -->
         <section id="tab-vault" class="hidden space-y-6">
             <div class="bg-darkcard border border-darkborder rounded-xl p-6 shadow-xl space-y-6">
                 <div>
                     <h2 class="text-lg font-bold text-white flex items-center gap-2">
-                        <span>🏛️</span> Executive Master Vault
+                        <span>📜</span> Dean's Examination & Academic Archive Vault
                     </h2>
-                    <p class="text-xs text-slate-400">Restricted to identity tokens with verified <code class="text-indigo-400">role: superadmin</code> claims.</p>
+                    <p class="text-xs text-slate-400">Classified examination dossiers and grade ledgers. Access restricted to verified <code class="text-blue-400 bg-blue-950/60 px-1 py-0.5 rounded border border-blue-900/50">role: superadmin</code> (Dean / Controller of Examinations).</p>
                 </div>
 
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-xs font-mono text-slate-400 mb-1">Bearer Authorization Token</label>
-                        <div class="flex gap-2">
-                            <input id="vault-token-input" type="text" placeholder="Bearer eyJhbGciOi..." class="flex-1 bg-slate-900 border border-darkborder rounded-lg px-3 py-2 text-xs text-white font-mono">
-                            <button onclick="useSessionToken()" class="bg-slate-800 hover:bg-slate-700 border border-darkborder px-3 py-2 rounded-lg text-xs font-bold font-mono">Use My Token</button>
-                            <button onclick="fetchVaultSecrets()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-xs font-bold font-mono">Unlock Vault</button>
+                        <label class="block text-xs font-mono text-slate-400 mb-1">Dean Bearer Authorization Token</label>
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <input id="vault-token-input" type="text" placeholder="Bearer eyJhbGciOi..." class="flex-1 bg-slate-900 border border-darkborder rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-blue-500">
+                            <div class="flex gap-2">
+                                <button onclick="useSessionToken()" class="bg-slate-800 hover:bg-slate-700 border border-darkborder px-3 py-2 rounded-lg text-xs font-bold font-mono transition">Use My Token</button>
+                                <button onclick="fetchVaultSecrets()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-xs font-bold font-mono transition shadow">Unlock Vault</button>
+                            </div>
                         </div>
                     </div>
 
                     <div class="border border-darkborder rounded-lg bg-slate-950 p-4 space-y-3">
                         <div class="flex justify-between items-center border-b border-darkborder pb-2">
-                            <span class="text-xs font-mono text-slate-400">Vault Secrets Output:</span>
-                            <span id="vault-status" class="text-xs font-mono text-slate-500">Locked</span>
+                            <span class="text-xs font-mono text-slate-400">Classified Academic Records:</span>
+                            <span id="vault-status" class="text-xs font-mono text-slate-500 font-bold">Locked</span>
                         </div>
                         <div id="vault-records" class="text-xs font-mono space-y-2 min-h-[100px]">
-                            <span class="text-slate-600">Provide a valid Superadmin JWT to view confidential vault secrets.</span>
+                            <span class="text-slate-600">Provide a valid Dean / Superadmin JWT to decrypt and inspect examination vault dossiers.</span>
                         </div>
                     </div>
                 </div>
             </div>
         </section>
 
+        <!-- Tab 4: Transcript Recovery -->
         <section id="tab-recovery" class="hidden space-y-6">
             <div class="bg-darkcard border border-darkborder rounded-xl p-6 shadow-xl space-y-6">
                 <div>
                     <h2 class="text-lg font-bold text-white flex items-center gap-2">
-                        <span>🚑</span> Emergency Key Recovery Console
+                        <span>📋</span> Student Transcript & Credential Recovery Console
                     </h2>
-                    <p class="text-xs text-slate-400">AES-256-CBC Decryption and Key Restoration Service.</p>
+                    <p class="text-xs text-slate-400">High-assurance AES-256-CBC Encrypted Student Records & Roll Code Recovery Gateway.</p>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div class="space-y-3 bg-slate-900/40 border border-darkborder p-4 rounded-xl">
-                        <h3 class="text-sm font-bold text-white">Create Encrypted Recovery Seed</h3>
+                        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                            <span>🔒</span> Generate Encrypted Credential Backup
+                        </h3>
                         <div>
-                            <label class="block text-xs font-mono text-slate-400 mb-1">User ID</label>
-                            <input id="rec-uid" type="number" value="1" class="w-full bg-slate-900 border border-darkborder rounded-lg px-3 py-2 text-xs text-white font-mono">
+                            <label class="block text-xs font-mono text-slate-400 mb-1">Student Record ID</label>
+                            <input id="rec-uid" type="number" value="1" class="w-full bg-slate-900 border border-darkborder rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-blue-500">
                         </div>
                         <div>
-                            <label class="block text-xs font-mono text-slate-400 mb-1">Recovery Phrase</label>
-                            <input id="rec-phrase" type="text" placeholder="e.g. enterprise-master-seed-phrase" class="w-full bg-slate-900 border border-darkborder rounded-lg px-3 py-2 text-xs text-white font-mono">
+                            <label class="block text-xs font-mono text-slate-400 mb-1">Transcript Recovery Code / Seed</label>
+                            <input id="rec-phrase" type="text" placeholder="e.g. transcript-auth-roll-2026" class="w-full bg-slate-900 border border-darkborder rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-blue-500">
                         </div>
-                        <button onclick="createRecoveryBlob()" class="w-full bg-slate-800 hover:bg-slate-700 border border-darkborder text-xs font-bold py-2 rounded-lg font-mono">
+                        <button onclick="createRecoveryBlob()" class="w-full bg-slate-800 hover:bg-slate-700 border border-darkborder text-xs font-bold py-2.5 rounded-lg font-mono transition text-slate-200">
                             Encrypt with AES-CBC
                         </button>
                     </div>
 
                     <div class="space-y-3 bg-slate-900/40 border border-darkborder p-4 rounded-xl">
-                        <h3 class="text-sm font-bold text-white">Verify Recovery Seed</h3>
+                        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                            <span>🔍</span> Verify & Restore Credential Backup
+                        </h3>
                         <div>
                             <label class="block text-xs font-mono text-slate-400 mb-1">Base64 Encrypted Blob (IV + Ciphertext)</label>
-                            <textarea id="oracle-input" rows="3" placeholder="Paste base64 encrypted blob here..." class="w-full bg-slate-900 border border-darkborder rounded-lg p-2 text-xs text-white font-mono"></textarea>
+                            <textarea id="oracle-input" rows="3" placeholder="Paste base64 encrypted blob here..." class="w-full bg-slate-900 border border-darkborder rounded-lg p-2 text-xs text-white font-mono focus:outline-none focus:border-blue-500"></textarea>
                         </div>
-                        <button onclick="testOracle()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-xs font-bold py-2 rounded-lg font-mono">
-                            Verify Recovery Seed
+                        <button onclick="testOracle()" class="w-full bg-blue-600 hover:bg-blue-500 text-xs font-bold py-2.5 rounded-lg font-mono transition text-white shadow">
+                            Verify Credential Backup
                         </button>
 
                         <div class="mt-3 p-3 bg-slate-950 border border-darkborder rounded-lg space-y-1">
-                            <div class="text-[11px] font-mono text-slate-400">Server Response:</div>
+                            <div class="text-[11px] font-mono text-slate-400">Server Verification Response:</div>
                             <div id="oracle-response" class="text-xs font-mono text-slate-500 font-bold">Waiting for input...</div>
                         </div>
                     </div>
@@ -230,50 +257,66 @@
         </section>
     </main>
 
+    <footer class="mt-12 border-t border-darkborder py-6 text-center text-xs text-slate-500 font-mono">
+        CampusPortal Academic ERP • Integrated University Management System • Confidential & Secure
+    </footer>
+
     <script>
         let currentUser = null;
 
         function switchTab(tab) {
             ['auth', 'oauth', 'vault', 'recovery'].forEach(t => {
                 document.getElementById('tab-' + t).classList.add('hidden');
-                document.getElementById('tab-btn-' + t).className = "pb-3 px-2 font-bold text-sm text-slate-400 hover:text-white flex items-center gap-2";
+                document.getElementById('tab-btn-' + t).className = "pb-3 px-2 font-bold text-sm text-slate-400 hover:text-white flex items-center gap-2 whitespace-nowrap";
             });
             document.getElementById('tab-' + tab).classList.remove('hidden');
-            document.getElementById('tab-btn-' + tab).className = "pb-3 px-2 font-bold text-sm text-indigo-400 border-b-2 border-indigo-500 flex items-center gap-2";
+            document.getElementById('tab-btn-' + tab).className = "pb-3 px-2 font-bold text-sm text-blue-400 border-b-2 border-blue-500 flex items-center gap-2 whitespace-nowrap";
         }
 
         async function handleRegister() {
-            const u = document.getElementById('reg-username').value;
-            const p = document.getElementById('reg-password').value;
+            const u = document.getElementById('reg-username').value.trim();
+            const p = document.getElementById('reg-password').value.trim();
             const r = document.getElementById('reg-role').value;
+            if (!u || !p) return alert('Please enter both username and password');
+
             const form = new FormData();
             form.append('username', u);
             form.append('password', p);
             form.append('role', r);
 
-            const res = await fetch('/api/register', { method: 'POST', body: form });
-            const data = await res.json();
-            if (res.ok) {
-                setSession(u, r, data.token);
-                alert('Account registered! Session token created.');
-            } else {
-                alert(data.detail || 'Registration failed');
+            try {
+                const res = await fetch('/api/register', { method: 'POST', body: form });
+                const data = await res.json();
+                if (res.ok) {
+                    setSession(u, r, data.token);
+                    alert('Academic identity registered successfully! Session token active.');
+                } else {
+                    alert(data.detail || 'Registration failed');
+                }
+            } catch (err) {
+                alert('Request failed: ' + err.message);
             }
         }
 
         async function handleLogin() {
-            const u = document.getElementById('login-username').value;
-            const p = document.getElementById('login-password').value;
+            const u = document.getElementById('login-username').value.trim();
+            const p = document.getElementById('login-password').value.trim();
+            if (!u || !p) return alert('Please enter both username and password');
+
             const form = new FormData();
             form.append('username', u);
             form.append('password', p);
 
-            const res = await fetch('/api/login', { method: 'POST', body: form });
-            const data = await res.json();
-            if (res.ok) {
-                setSession(u, data.role, data.token);
-            } else {
-                alert(data.detail || 'Login failed');
+            try {
+                const res = await fetch('/api/login', { method: 'POST', body: form });
+                const data = await res.json();
+                if (res.ok) {
+                    setSession(u, data.role, data.token);
+                } else {
+                    alert(data.detail || 'Authentication failed');
+                }
+            } catch (err) {
+                alert('Request failed: ' + err.message);
             }
         }
 
@@ -282,7 +325,7 @@
             document.getElementById('user-info-pill').classList.remove('hidden');
             document.getElementById('user-info-pill').classList.add('flex');
             document.getElementById('user-name').textContent = username;
-            document.getElementById('user-role').textContent = role;
+            document.getElementById('user-role').textContent = role === 'superadmin' ? 'Dean' : 'Student';
             document.getElementById('token-box').classList.remove('hidden');
             document.getElementById('active-jwt').value = token;
         }
@@ -290,123 +333,186 @@
         function logout() {
             currentUser = null;
             document.getElementById('user-info-pill').classList.add('hidden');
+            document.getElementById('user-info-pill').classList.remove('flex');
             document.getElementById('token-box').classList.add('hidden');
             document.getElementById('active-jwt').value = '';
         }
 
         function copyToken() {
             const t = document.getElementById('active-jwt').value;
+            if (!t) return;
             navigator.clipboard.writeText(t);
-            alert('JWT copied to clipboard!');
+            alert('Bearer token copied to clipboard!');
         }
 
         async function openClientPrompt() {
-            const name = prompt("Enter Application Name:", "Enterprise Internal Tool");
+            const name = prompt("Enter Department Portal Name:", "Central Digital Library");
             if (!name) return;
-            const redirect = prompt("Enter Allowed Redirect URI:", "https://app.sentinel.internal");
+            const redirect = prompt("Enter Authorized Callback URI:", "https://library.campus.ac.in/oauth/callback");
             if (!redirect) return;
 
             const form = new FormData();
             form.append('name', name);
             form.append('allowed_redirect', redirect);
 
-            const res = await fetch('/api/oauth/clients', { method: 'POST', body: form });
-            const data = await res.json();
-            if (res.ok) {
-                alert(`Client Registered!\nClient ID: ${data.client_id}\nSecret: ${data.client_secret}`);
-                document.getElementById('inspect-client-id').value = data.client_id;
+            try {
+                const res = await fetch('/api/oauth/clients', { method: 'POST', body: form });
+                const data = await res.json();
+                if (res.ok) {
+                    alert(`Department Portal Registered!\nPortal ID: ${data.client_id}\nSecret: ${data.client_secret}\nCallback: ${data.allowed_redirect}`);
+                    document.getElementById('inspect-client-id').value = data.client_id;
+                } else {
+                    alert(data.detail || 'Failed to register department portal');
+                }
+            } catch (err) {
+                alert('Request failed: ' + err.message);
             }
         }
 
         async function loadAuditLogs() {
-            const cid = document.getElementById('inspect-client-id').value;
-            if (!cid) return alert('Please enter a Client ID');
-            const res = await fetch(`/api/clients/${cid}/audit-logs`);
-            const data = await res.json();
+            const cid = document.getElementById('inspect-client-id').value.trim();
+            if (!cid) return alert('Please enter a Department Portal ID');
             const box = document.getElementById('audit-log-results');
-            box.innerHTML = '';
-            if (data.logs && data.logs.length > 0) {
-                data.logs.forEach(l => {
-                    box.innerHTML += `<div class="p-2 border border-darkborder bg-slate-900 rounded mb-1">
-                        <div class="text-indigo-400 font-bold">${l.event_name}</div>
-                        <div class="text-white">${l.details}</div>
-                        <div class="text-[10px] text-slate-500">${l.created_at}</div>
-                    </div>`;
-                });
-            } else {
-                box.innerHTML = '<span class="text-slate-500">No audit logs found for this client.</span>';
+            box.innerHTML = '<span class="text-blue-400">Fetching department access trail...</span>';
+
+            try {
+                const res = await fetch(`/api/clients/${cid}/audit-logs`);
+                const data = await res.json();
+                box.innerHTML = '';
+                if (data.logs && data.logs.length > 0) {
+                    data.logs.forEach(l => {
+                        box.innerHTML += `<div class="p-2 border border-darkborder bg-slate-900 rounded mb-1">
+                            <div class="text-blue-400 font-bold">${escapeHtml(l.event_name)}</div>
+                            <div class="text-white">${escapeHtml(l.details)}</div>
+                            <div class="text-[10px] text-slate-500">${escapeHtml(l.created_at)}</div>
+                        </div>`;
+                    });
+                } else {
+                    box.innerHTML = '<span class="text-slate-500">No access or attendance logs found for this department portal.</span>';
+                }
+            } catch (err) {
+                box.innerHTML = `<span class="text-rose-400">Failed to fetch logs: ${err.message}</span>`;
             }
         }
 
         function useSessionToken() {
-            if (!currentUser) return alert('Please login first to generate a token!');
+            if (!currentUser) return alert('Please login first to generate an active session token!');
             document.getElementById('vault-token-input').value = currentUser.token;
         }
 
         async function fetchVaultSecrets() {
-            const token = document.getElementById('vault-token-input').value;
+            let token = document.getElementById('vault-token-input').value.trim();
             if (!token) return alert('Please provide a Bearer JWT token!');
 
-            const res = await fetch('/api/admin/vault', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await res.json();
+            if (!token.startsWith('Bearer ')) {
+                token = 'Bearer ' + token;
+            }
+
             const statusBox = document.getElementById('vault-status');
             const recordsBox = document.getElementById('vault-records');
+            recordsBox.innerHTML = '<span class="text-blue-400">Querying Dean Archives...</span>';
 
-            if (res.ok) {
-                statusBox.textContent = "UNLOCKED (HTTP 200)";
-                statusBox.className = "text-xs font-mono text-emerald-400 font-bold";
-                recordsBox.innerHTML = '';
-                (data.secrets || []).forEach(s => {
-                    recordsBox.innerHTML += `<div class="p-2 border border-emerald-900/60 bg-emerald-950/20 rounded">
-                        <div class="text-white font-bold">${s.title}</div>
-                        <div class="text-emerald-300 font-bold break-all">${s.secret_value}</div>
-                    </div>`;
+            try {
+                const res = await fetch('/api/admin/vault', {
+                    headers: { 'Authorization': token }
                 });
-            } else {
-                statusBox.textContent = `LOCKED (${res.status} ${data.detail || ''})`;
+                const data = await res.json();
+
+                if (res.ok) {
+                    statusBox.textContent = "UNLOCKED (Dean Access Verified)";
+                    statusBox.className = "text-xs font-mono text-emerald-400 font-bold";
+                    recordsBox.innerHTML = '';
+                    if (data.secrets && data.secrets.length > 0) {
+                        data.secrets.forEach(s => {
+                            recordsBox.innerHTML += `<div class="p-2.5 border border-emerald-900/60 bg-emerald-950/20 rounded">
+                                <div class="text-white font-bold">${escapeHtml(s.title)}</div>
+                                <div class="text-emerald-300 font-bold break-all mt-1">${escapeHtml(s.secret_value)}</div>
+                            </div>`;
+                        });
+                    } else {
+                        recordsBox.innerHTML = '<span class="text-slate-400">No classified vault records currently filed.</span>';
+                    }
+                } else {
+                    statusBox.textContent = `LOCKED (${res.status} ${data.detail || ''})`;
+                    statusBox.className = "text-xs font-mono text-rose-400 font-bold";
+                    recordsBox.innerHTML = `<span class="text-rose-400 font-bold">${escapeHtml(data.detail || 'Access Denied: Requires Dean role')}</span>`;
+                }
+            } catch (err) {
+                statusBox.textContent = "ERROR";
                 statusBox.className = "text-xs font-mono text-rose-400 font-bold";
-                recordsBox.innerHTML = `<span class="text-rose-400 font-bold">${data.detail || 'Access Denied'}</span>`;
+                recordsBox.innerHTML = `<span class="text-rose-400 font-bold">Network error: ${err.message}</span>`;
             }
         }
 
         async function createRecoveryBlob() {
             const uid = document.getElementById('rec-uid').value;
-            const ph = document.getElementById('rec-phrase').value;
+            const ph = document.getElementById('rec-phrase').value.trim();
+            if (!ph) return alert('Please provide a recovery phrase or roll code');
+
             const form = new FormData();
             form.append('user_id', uid);
             form.append('seed_phrase', ph);
 
-            const res = await fetch('/api/recovery/create', { method: 'POST', body: form });
-            const data = await res.json();
-            if (res.ok) {
-                document.getElementById('oracle-input').value = data.encrypted_blob;
-                alert('Encrypted blob created and loaded into verification console!');
+            try {
+                const res = await fetch('/api/recovery/create', { method: 'POST', body: form });
+                const data = await res.json();
+                if (res.ok) {
+                    document.getElementById('oracle-input').value = data.encrypted_blob;
+                    alert('Encrypted student backup generated and loaded into verification console!');
+                } else {
+                    alert(data.detail || 'Backup creation failed');
+                }
+            } catch (err) {
+                alert('Request failed: ' + err.message);
             }
         }
 
         async function testOracle() {
-            const blob = document.getElementById('oracle-input').value;
-            if (!blob) return alert('Please paste an encrypted blob');
+            const blob = document.getElementById('oracle-input').value.trim();
+            if (!blob) return alert('Please paste an encrypted backup blob');
 
-            const res = await fetch('/api/recovery/restore', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ encrypted_blob: blob })
-            });
-            const data = await res.json();
             const box = document.getElementById('oracle-response');
+            box.innerHTML = '<span class="text-blue-400">Verifying backup blob with decryption engine...</span>';
 
-            if (res.status === 200) {
-                box.innerHTML = `<span class="text-emerald-400 font-bold">HTTP 200 OK — Phrase: ${data.phrase}</span>`;
-            } else if (res.status === 400) {
-                box.innerHTML = `<span class="text-rose-400 font-bold">HTTP 400 BAD REQUEST — ${data.error}</span>`;
-            } else if (res.status === 422) {
-                box.innerHTML = `<span class="text-amber-400 font-bold">HTTP 422 UNPROCESSABLE — ${data.error}</span>`;
-            } else {
-                box.innerHTML = `<span class="text-slate-400 font-bold">HTTP ${res.status}: ${JSON.stringify(data)}</span>`;
+            const headers = { 'Content-Type': 'application/json' };
+            if (currentUser && currentUser.token) {
+                headers['Authorization'] = 'Bearer ' + currentUser.token;
             }
+
+            try {
+                const res = await fetch('/api/recovery/restore', {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({ encrypted_blob: blob })
+                });
+                const data = await res.json();
+
+                if (res.status === 200) {
+                    if (data.phrase) {
+                        box.innerHTML = `<span class="text-emerald-400 font-bold">HTTP 200 OK — Restored Record: ${escapeHtml(data.phrase)}</span>`;
+                    } else {
+                        box.innerHTML = `<span class="text-emerald-400 font-bold">HTTP 200 OK — ${escapeHtml(data.message || 'Backup verified')} (Record ID: ${escapeHtml(data.record_id)})</span>`;
+                    }
+                } else if (res.status === 400) {
+                    box.innerHTML = `<span class="text-rose-400 font-bold">HTTP 400 BAD REQUEST — ${escapeHtml(data.error || 'Invalid PKCS#7 padding block')}</span>`;
+                } else if (res.status === 422) {
+                    box.innerHTML = `<span class="text-amber-400 font-bold">HTTP 422 UNPROCESSABLE — ${escapeHtml(data.error || 'Malformed payload')}</span>`;
+                } else {
+                    box.innerHTML = `<span class="text-slate-400 font-bold">HTTP ${res.status}: ${escapeHtml(JSON.stringify(data))}</span>`;
+                }
+            } catch (err) {
+                box.innerHTML = `<span class="text-rose-400 font-bold">Network or service error: ${err.message}</span>`;
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
         }
     </script>
 </body>

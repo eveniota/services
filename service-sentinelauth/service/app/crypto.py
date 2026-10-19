@@ -48,7 +48,7 @@ def get_public_key_pem() -> bytes:
     with open(PUBLIC_KEY_PATH, "rb") as f:
         return f.read()
 
-AES_MASTER_KEY = os.getenv("AES_MASTER_KEY", "sentinel_master_key_32bytes_!!").encode()[:32]
+AES_MASTER_KEY = hashlib.sha256(os.getenv("AES_MASTER_KEY", "sentinel_master_key_32bytes_!!").encode()).digest()
 
 class PaddingException(Exception):
     """Raised specifically when PKCS#7 padding validation fails."""

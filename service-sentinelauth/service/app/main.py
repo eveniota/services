@@ -27,7 +27,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="SentinelAuth SSO Gateway", lifespan=lifespan)
+app = FastAPI(title="CampusPortal Academic ERP", lifespan=lifespan)
 
 
 def get_current_user(authorization: Optional[str] = Header(None)):
@@ -52,17 +52,30 @@ def get_public_key():
     return get_public_key_pem().decode("utf-8")
 
 
+ADMIN_REGISTRATION_KEY = os.getenv("ADMIN_REGISTRATION_KEY", "campus_dean_secret_authorization_key_2026")
+
+
 @app.post("/api/register")
 def register(
     username: str = Form(...),
     password: str = Form(...),
     role: str = Form("member"),
+    admin_key: Optional[str] = Form(None),
 ):
+    if role == "superadmin":
+        if admin_key != ADMIN_REGISTRATION_KEY:
+            raise HTTPException(
+                status_code=403,
+                detail="Superadmin registration requires valid institutional authorization key"
+            )
+    else:
+        role = "member"
+
     conn = get_db()
     try:
         cur = conn.execute(
             "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
-            (username, hash_password(password), role if role in ["member", "superadmin"] else "member"),
+            (username, hash_password(password), role),
         )
         conn.commit()
         user_id = cur.lastrowid
@@ -250,10 +263,33 @@ def create_recovery_key(
 
 
 @app.post("/api/recovery/restore")
-def restore_recovery_key(req: RecoveryRestoreRequest):
+def restore_recovery_key(
+    req: RecoveryRestoreRequest,
+    authorization: Optional[str] = Header(None),
+):
     try:
         data = decrypt_recovery_data(req.encrypted_blob)
-        return {"status": "ok", "message": "Recovery key restored successfully", "phrase": data.get("phrase")}
+        target_uid = str(data.get("user_id"))
+
+        # If requester is authenticated and owns this student record (or is superadmin), return the phrase
+        if authorization and authorization.startswith("Bearer "):
+            try:
+                user = verify_user_jwt(authorization.split(" ")[1])
+                if user.get("sub") == target_uid or user.get("role") == "superadmin":
+                    return {
+                        "status": "ok",
+                        "message": "Recovery key restored successfully",
+                        "phrase": data.get("phrase"),
+                    }
+            except Exception:
+                pass
+
+        # Non-owner or unauthenticated callers only receive verification confirmation
+        return {
+            "status": "ok",
+            "message": "Credential backup verified successfully",
+            "record_id": target_uid,
+        }
     except PaddingException:
         return JSONResponse(status_code=400, content={"error": "Invalid PKCS#7 padding block"})
     except Exception:

@@ -1,8 +1,10 @@
 services:
   docovault:
-    build: ..
+    build: .
+    container_name: service-docuvault
     ports:
       - "8000:8000"
     volumes:
       - ./data:/data
+      - ./app:/service/app
     restart: unless-stopped

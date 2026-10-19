@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DocuVault | Enterprise Confidential Workspaces</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        slate: {
+                            850: '#111827',
+                            900: '#0f172a',
+                            950: '#090d16'
+                        },
+                        indigo: {
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Modern Scrollbars & Animations */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #090d16; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #334155; }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(51, 65, 85, 0.4);
+        }
+        .glass-card {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(51, 65, 85, 0.3);
+        }
+        .glass-card:hover {
+            border-color: rgba(99, 102, 241, 0.4);
+        }
+        .glow-indigo {
+            box-shadow: 0 0 25px -5px rgba(99, 102, 241, 0.25);
+        }
+        @keyframes pulse-subtle {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .animate-pulse-subtle { animation: pulse-subtle 3s infinite ease-in-out; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-indigo-600 selection:text-white">
+
+    <!-- TOP NAVIGATION BAR -->
+    <header class="border-b border-slate-800/80 bg-slate-900/80 sticky top-0 z-40 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <!-- Brand Logo -->
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('workspaces')">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-600/30">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-lg font-bold tracking-tight text-white">DocuVault</span>
+                        <span class="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">Enterprise</span>
+                    </div>
+                    <p class="text-[11px] text-slate-400">Confidential Workspaces & Audited Archive</p>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <nav class="hidden md:flex items-center space-x-1" id="navTabs">
+                <button onclick="switchTab('workspaces')" id="tab-btn-workspaces" class="px-4 py-2 rounded-lg text-sm font-medium transition flex items-center space-x-2 text-indigo-400 bg-indigo-600/10 border border-indigo-500/20">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                    <span>Workspaces</span>
+                </button>
+                <button onclick="switchTab('exporter')" id="tab-btn-exporter" class="px-4 py-2 rounded-lg text-sm font-medium transition flex items-center space-x-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                    <span>Document Exporter</span>
+                </button>
+            </nav>
+
+            <!-- User Auth Profile Area -->
+            <div class="flex items-center space-x-3" id="authNavArea">
+                <!-- Logged Out State -->
+                <div id="unauthControls" class="flex items-center space-x-2">
+                    <button onclick="openAuthModal('login')" class="px-3.5 py-1.5 text-xs font-medium text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition border border-slate-700">
+                        Sign In
+                    </button>
+                    <button onclick="openAuthModal('register')" class="px-3.5 py-1.5 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg transition shadow-md shadow-indigo-600/30">
+                        Register
+                    </button>
+                </div>
+
+                <!-- Logged In State -->
+                <div id="authControls" class="hidden flex items-center space-x-3">
+                    <div class="flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/80 text-xs">
+                        <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                        <div class="flex flex-col text-left">
+                            <span id="navUsername" class="font-semibold text-slate-200 leading-none">User</span>
+                            <span id="navBio" class="text-[10px] text-slate-400 truncate max-w-[140px] mt-0.5">Role</span>
+                        </div>
+                    </div>
+                    <button onclick="handleLogout()" title="Sign Out" class="p-2 text-slate-400 hover:text-red-400 hover:bg-slate-800/80 rounded-lg transition border border-transparent hover:border-red-500/20">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN APP CONTENT AREA -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- TAB 1: WORKSPACES & DOCUMENTS -->
+        <section id="section-workspaces" class="space-y-6">
+            <!-- Top Controls & Search / Jump -->
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 glass-panel p-6 rounded-2xl glow-indigo">
+                <div>
+                    <h1 class="text-2xl font-bold text-white tracking-tight flex items-center space-x-2">
+                        <span>Workspaces & Confidential Repositories</span>
+                    </h1>
+                    <p class="text-sm text-slate-400 mt-1">Organize classified memos, engineering telemetry, and enterprise briefs.</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-3">
+                    <!-- Quick Handle Lookup -->
+                    <div class="flex items-center bg-slate-900 border border-slate-700 rounded-xl overflow-hidden focus-within:border-indigo-500 transition">
+                        <span class="pl-3 pr-1 text-slate-500 text-sm font-mono">@</span>
+                        <input type="text" id="directHandleInput" placeholder="lookup handle..." class="bg-transparent py-2 pr-3 text-sm text-slate-200 placeholder-slate-500 focus:outline-none w-36 sm:w-44 font-mono" onkeydown="if(event.key==='Enter') lookupWorkspace()">
+                        <button onclick="lookupWorkspace()" class="px-3 py-2 text-xs font-medium text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border-l border-slate-700 transition">
+                            Explore
+                        </button>
+                    </div>
+                    <!-- Create Workspace Button (Requires Auth) -->
+                    <button onclick="openCreateWorkspaceModal()" class="px-4 py-2.5 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition shadow-lg shadow-indigo-600/20 flex items-center space-x-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        <span>New Workspace</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Workspace View Container -->
+            <div id="workspaceViewArea">
+                <!-- State A: Active Workspace Document Explorer -->
+                <div id="activeWorkspaceDetail" class="hidden space-y-6">
+                    <!-- Workspace Header Bar -->
+                    <div class="glass-card p-6 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 border-l-4 border-l-indigo-500">
+                        <div>
+                            <div class="flex flex-wrap items-center gap-2.5">
+                                <button onclick="exitWorkspaceView()" class="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition" title="Back to All Workspaces">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                                </button>
+                                <h2 id="activeWsName" class="text-xl font-bold text-white">Engineering Ops</h2>
+                                <span id="activeWsIdBadge" class="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">Workspace ID #0</span>
+                                <span id="activeWsHandle" class="text-xs font-mono px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">@handle</span>
+                                <span id="activeWsOwnerBadge" class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Owner Access</span>
+                            </div>
+                            <p class="text-xs text-slate-400 mt-2 flex items-center space-x-2">
+                                <span>Confidential vault partitioning enabled.</span>
+                                <span>•</span>
+                                <span id="activeWsDocCount">0 records indexed</span>
+                            </p>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <button onclick="refreshActiveWorkspace()" class="px-3 py-2 text-xs font-medium text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition border border-slate-700 flex items-center space-x-1.5">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                <span>Reload</span>
+                            </button>
+                            <button id="btnNewDoc" onclick="openCreateDocModal()" class="px-4 py-2 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition shadow-md shadow-indigo-600/30 flex items-center space-x-1.5">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                <span>Add Document</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Documents Grid -->
+                    <div id="activeWsDocList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                        <!-- Rendered dynamically -->
+                    </div>
+                </div>
+
+                <!-- State B: My Workspaces Grid (Home) -->
+                <div id="myWorkspacesListSection" class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-lg font-semibold text-slate-200">My Registered Workspaces</h2>
+                        <span id="myWsCounter" class="text-xs text-slate-400 font-mono">0 Workspaces</span>
+                    </div>
+
+                    <div id="myWorkspacesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: DOCUMENT EXPORTER (Cross-Workspace Archiver) -->
+        <section id="section-exporter" class="hidden space-y-6">
+            <div class="glass-panel p-6 rounded-2xl border-l-4 border-l-amber-500">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-semibold tracking-wider uppercase bg-amber-500/10 text-amber-400 border border-amber-500/20">Audit Utility</span>
+                            <h1 class="text-2xl font-bold text-white tracking-tight">Compliance Document Exporter</h1>
+                        </div>
+                        <p class="text-sm text-slate-400 mt-1 max-w-2xl">
+                            Regulatory compliance export interface. Extract verified document artifacts by workspace reference and document index for external archival or legal retention.
+                        </p>
+                    </div>
+                    <div class="p-3 bg-amber-500/10 text-amber-400 rounded-xl border border-amber-500/20">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"/></svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export Form Card -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="glass-card p-6 rounded-2xl lg:col-span-1 space-y-4">
+                    <h2 class="text-base font-semibold text-slate-100 flex items-center space-x-2">
+                        <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+                        <span>Export Parameters</span>
+                    </h2>
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1.5">Workspace Reference ID</label>
+                        <input type="number" id="exportWsId" placeholder="e.g. 1" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition font-mono">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1.5">Document Index ID</label>
+                        <input type="number" id="exportDocId" placeholder="e.g. 1" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition font-mono">
+                    </div>
+
+                    <button onclick="executeDocumentExport()" class="w-full py-2.5 px-4 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition shadow-lg shadow-indigo-600/30 flex items-center justify-center space-x-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                        <span>Extract & Export Record</span>
+                    </button>
+                </div>
+
+                <!-- Export Output Card -->
+                <div class="glass-card p-6 rounded-2xl lg:col-span-2 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                            <h2 class="text-base font-semibold text-slate-100 flex items-center space-x-2">
+                                <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                <span>Export Manifest & Content</span>
+                            </h2>
+                            <span id="exportStatusBadge" class="text-xs font-mono text-slate-500">Awaiting Query</span>
+                        </div>
+
+                        <div id="exportResultContainer" class="mt-4">
+                            <div class="text-center py-12 text-slate-500 text-sm">
+                                <svg class="w-12 h-12 mx-auto mb-3 opacity-30 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                <p>Provide Workspace ID & Document ID to extract archived record.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PUBLIC SHARED DOCUMENT VIEW (Active only when opening a share link) -->
+        <section id="section-share-viewer" class="hidden space-y-6 max-w-3xl mx-auto">
+            <div class="glass-panel p-8 rounded-2xl shadow-2xl border border-slate-800 space-y-6">
+                <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        </div>
+                        <div>
+                            <span class="text-[10px] font-semibold uppercase tracking-wider text-indigo-400">External Access</span>
+                            <h2 class="text-xl font-bold text-white">Shared Document</h2>
+                        </div>
+                    </div>
+                    <button onclick="switchTab('workspaces')" class="px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition border border-slate-700">
+                        Go to Dashboard
+                    </button>
+                </div>
+
+                <div id="sharedDocResultContainer">
+                    <div class="text-center py-12 text-slate-500 text-sm">
+                        <p>Loading document...</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODAL: AUTHENTICATION (Sign In / Register) -->
+    <div id="authModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+        <div class="glass-panel w-full max-w-md p-6 rounded-2xl shadow-2xl border border-slate-700/80 relative">
+            <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+
+            <!-- Auth Mode Switcher -->
+            <div class="flex rounded-xl bg-slate-900 p-1 mb-6 border border-slate-800">
+                <button id="authTabLogin" onclick="setAuthMode('login')" class="flex-1 py-1.5 text-xs font-semibold rounded-lg transition bg-indigo-600 text-white">
+                    Sign In
+                </button>
+                <button id="authTabRegister" onclick="setAuthMode('register')" class="flex-1 py-1.5 text-xs font-semibold rounded-lg transition text-slate-400 hover:text-white">
+                    Create Account
+                </button>
+            </div>
+
+            <!-- Login Form -->
+            <form id="loginForm" onsubmit="handleLoginSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Username</label>
+                    <input type="text" id="loginUsername" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Password</label>
+                    <input type="password" id="loginPassword" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition">
+                </div>
+                <button type="submit" class="w-full py-2.5 px-4 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition shadow-lg shadow-indigo-600/30">
+                    Sign In to Vault
+                </button>
+            </form>
+
+            <!-- Register Form -->
+            <form id="registerForm" onsubmit="handleRegisterSubmit(event)" class="hidden space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Username</label>
+                    <input type="text" id="regUsername" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Password</label>
+                    <input type="password" id="regPassword" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Role / Executive Bio</label>
+                    <input type="text" id="regBio" placeholder="e.g. Lead Cryptographer / Ops Lead" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition">
+                    <p class="text-[11px] text-slate-500 mt-1">Saved to your confidential member profile record.</p>
+                </div>
+                <button type="submit" class="w-full py-2.5 px-4 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition shadow-lg shadow-indigo-600/30">
+                    Register Member
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: CREATE WORKSPACE -->
+    <div id="createWorkspaceModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+        <div class="glass-panel w-full max-w-md p-6 rounded-2xl shadow-2xl border border-slate-700/80 relative">
+            <button onclick="closeCreateWorkspaceModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+
+            <h3 class="text-lg font-bold text-white mb-1 flex items-center space-x-2">
+                <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                <span>Initialize Workspace</span>
+            </h3>
+            <p class="text-xs text-slate-400 mb-5">Create an isolated repository partition for your documents.</p>
+
+            <form onsubmit="handleCreateWorkspace(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Workspace Handle (Unique Slug)</label>
+                    <div class="flex items-center bg-slate-900 border border-slate-700 rounded-xl overflow-hidden focus-within:border-indigo-500 transition">
+                        <span class="pl-3.5 pr-1 text-slate-500 text-sm font-mono">@</span>
+                        <input type="text" id="wsHandleInput" required placeholder="e.g. quantum-core" class="w-full bg-transparent py-2.5 pr-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none font-mono">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Display Name</label>
+                    <input type="text" id="wsNameInput" required placeholder="e.g. Quantum Research Group" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition">
+                </div>
+                <div class="flex items-center space-x-3 p-3 bg-slate-900/60 rounded-xl border border-slate-800">
+                    <input type="checkbox" id="wsPrivateInput" checked class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 bg-slate-800 border-slate-700">
+                    <div>
+                        <label for="wsPrivateInput" class="text-xs font-medium text-slate-200">Restricted Privacy Mode</label>
+                        <p class="text-[10px] text-slate-400">Non-owners will only see unclassified documents.</p>
+                    </div>
+                </div>
+                <button type="submit" class="w-full py-2.5 px-4 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition shadow-lg shadow-indigo-600/30">
+                    Create Workspace
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: CREATE DOCUMENT -->
+    <div id="createDocModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+        <div class="glass-panel w-full max-w-lg p-6 rounded-2xl shadow-2xl border border-slate-700/80 relative">
+            <button onclick="closeCreateDocModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+
+            <h3 class="text-lg font-bold text-white mb-1 flex items-center space-x-2">
+                <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                <span>Publish Document Record</span>
+            </h3>
+            <p class="text-xs text-slate-400 mb-5">Append confidential brief or operational intelligence to workspace.</p>
+
+            <form onsubmit="handleCreateDocument(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Document Title</label>
+                    <input type="text" id="docTitleInput" required placeholder="e.g. Executive Directive memo #819" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Document Content</label>
+                    <textarea id="docContentInput" required rows="5" placeholder="Enter document body, operational telemetry, or classified directives..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition font-mono"></textarea>
+                </div>
+                <div class="flex items-center space-x-3 p-3 bg-slate-900/60 rounded-xl border border-slate-800">
+                    <input type="checkbox" id="docConfidentialInput" class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 bg-slate-800 border-slate-700">
+                    <div>
+                        <label for="docConfidentialInput" class="text-xs font-medium text-slate-200">Classify as Confidential Memo</label>
+                        <p class="text-[10px] text-slate-400">Restricts viewing to workspace owner and authorized token holders.</p>
+                    </div>
+                </div>
+                <button type="submit" class="w-full py-2.5 px-4 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition shadow-lg shadow-indigo-600/30">
+                    Save to Workspace
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: VIEW DOCUMENT DETAILS -->
+    <div id="viewDocModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+        <div class="glass-panel w-full max-w-xl p-6 rounded-2xl shadow-2xl border border-slate-700/80 relative max-h-[85vh] flex flex-col">
+            <button onclick="closeViewDocModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+
+            <div class="flex items-center space-x-3 mb-2">
+                <span id="modalDocConfBadge" class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">Classification</span>
+                <span id="modalDocId" class="text-xs font-mono text-slate-500">#0</span>
+            </div>
+            <h3 id="modalDocTitle" class="text-xl font-bold text-white mb-4">Document Title</h3>
+
+            <div class="flex-1 overflow-y-auto mb-4 bg-slate-900/90 border border-slate-800 rounded-xl p-4">
+                <pre id="modalDocContent" class="text-xs text-slate-300 font-mono whitespace-pre-wrap leading-relaxed select-text"></pre>
+            </div>
+
+            <div class="flex items-center justify-between pt-3 border-t border-slate-800">
+                <button onclick="copyDocContent()" class="px-3.5 py-1.5 text-xs font-medium text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition border border-slate-700 flex items-center space-x-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                    <span>Copy Content</span>
+                </button>
+                <button onclick="closeViewDocModal()" class="px-4 py-1.5 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg transition">
+                    Close Viewer
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: SHARE LINK RESULT -->
+    <div id="shareLinkModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+        <div class="glass-panel w-full max-w-md p-6 rounded-2xl shadow-2xl border border-slate-700/80 relative">
+            <button onclick="closeShareLinkModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+
+            <div class="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center mb-3">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-1">Share Document Link</h3>
+            <p class="text-xs text-slate-400 mb-4">Anyone with this link can view this document.</p>
+
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-[11px] font-medium text-slate-400 mb-1">Public Access Link</label>
+                    <div class="flex items-center space-x-2">
+                        <input type="text" id="generatedShareUrlInput" readonly class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 font-mono focus:outline-none select-all">
+                        <button onclick="copyToClipboard('generatedShareUrlInput')" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition text-xs font-medium flex items-center space-x-1.5 shadow-md shadow-indigo-600/30">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+                            <span>Copy Link</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="pt-2 flex justify-end">
+                    <button onclick="closeShareLinkModal()" class="py-2 px-4 text-xs font-medium text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition border border-slate-700">
+                        Done
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toastContainer" class="fixed bottom-6 right-6 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <!-- CLIENT SCRIPT -->
+    <script>
+        // STATE STORE
+        const state = {
+            currentUser: null,
+            activeTab: 'workspaces',
+            myWorkspaces: [],
+            activeWorkspace: null, // { workspace, handle, is_owner, documents }
+            authMode: 'login'
+        };
+
+        // NOTIFICATION TOASTS
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `pointer-events-auto flex items-center space-x-2 px-4 py-3 rounded-xl shadow-xl text-xs font-medium transition transform duration-300 ease-out border backdrop-blur-md ${
+                type === 'success' ? 'bg-emerald-950/90 text-emerald-200 border-emerald-500/40' :
+                type === 'error' ? 'bg-red-950/90 text-red-200 border-red-500/40' :
+                'bg-slate-900/90 text-slate-200 border-slate-700'
+            }`;
+
+            const icon = type === 'success' ? '✓' : type === 'error' ? '✕' : 'ℹ';
+            toast.innerHTML = `<span class="font-bold">${icon}</span><span>${message}</span>`;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        // TAB SWITCHER
+        function switchTab(tabName) {
+            state.activeTab = tabName;
+            ['workspaces', 'exporter', 'share-viewer'].forEach(t => {
+                const sec = document.getElementById(`section-${t}`);
+                const btn = document.getElementById(`tab-btn-${t}`);
+                if (t === tabName) {
+                    sec.classList.remove('hidden');
+                    btn.className = "px-4 py-2 rounded-lg text-sm font-medium transition flex items-center space-x-2 text-indigo-400 bg-indigo-600/10 border border-indigo-500/20";
+                } else {
+                    sec.classList.add('hidden');
+                    btn.className = "px-4 py-2 rounded-lg text-sm font-medium transition flex items-center space-x-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800";
+                }
+            });
+        }
+
+        // AUTH MODAL LOGIC
+        function openAuthModal(mode = 'login') {
+            setAuthMode(mode);
+            document.getElementById('authModal').classList.remove('hidden');
+        }
+        function closeAuthModal() {
+            document.getElementById('authModal').classList.add('hidden');
+        }
+        function setAuthMode(mode) {
+            state.authMode = mode;
+            const tabLogin = document.getElementById('authTabLogin');
+            const tabReg = document.getElementById('authTabRegister');
+            const formLogin = document.getElementById('loginForm');
+            const formReg = document.getElementById('registerForm');
+
+            if (mode === 'login') {
+                tabLogin.className = "flex-1 py-1.5 text-xs font-semibold rounded-lg transition bg-indigo-600 text-white";
+                tabReg.className = "flex-1 py-1.5 text-xs font-semibold rounded-lg transition text-slate-400 hover:text-white";
+                formLogin.classList.remove('hidden');
+                formReg.classList.add('hidden');
+            } else {
+                tabReg.className = "flex-1 py-1.5 text-xs font-semibold rounded-lg transition bg-indigo-600 text-white";
+                tabLogin.className = "flex-1 py-1.5 text-xs font-semibold rounded-lg transition text-slate-400 hover:text-white";
+                formReg.classList.remove('hidden');
+                formLogin.classList.add('hidden');
+            }
+        }
+
+        // API: ME (Check session)
+        async function checkSession() {
+            try {
+                const res = await fetch('/api/me', { credentials: 'include' });
+                if (res.ok) {
+                    const user = await res.json();
+                    setAuthenticatedUser(user);
+                } else {
+                    setLoggedOutUser();
+                }
+            } catch (err) {
+                setLoggedOutUser();
+            }
+        }
+
+        function setAuthenticatedUser(user) {
+            state.currentUser = user;
+            document.getElementById('unauthControls').classList.add('hidden');
+            document.getElementById('authControls').classList.remove('hidden');
+            document.getElementById('navUsername').textContent = user.username;
+            document.getElementById('navBio').textContent = user.bio || 'Confidential Member';
+            loadMyWorkspaces();
+        }
+
+        function setLoggedOutUser() {
+            state.currentUser = null;
+            document.getElementById('authControls').classList.add('hidden');
+            document.getElementById('unauthControls').classList.remove('hidden');
+            document.getElementById('myWorkspacesGrid').innerHTML = `
+                <div class="col-span-full glass-card p-8 rounded-2xl text-center text-slate-400">
+                    <svg class="w-12 h-12 mx-auto mb-3 opacity-30 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                    <p class="text-sm font-medium text-slate-300">Sign in to view and manage confidential workspaces</p>
+                    <p class="text-xs text-slate-500 mt-1">Or search any public workspace handle above.</p>
+                    <button onclick="openAuthModal('login')" class="mt-4 px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition shadow-md shadow-indigo-600/30">
+                        Sign In Now
+                    </button>
+                </div>
+            `;
+            document.getElementById('myWsCounter').textContent = 'Authentication Required';
+        }
+
+        // API: LOGIN
+        async function handleLoginSubmit(e) {
+            e.preventDefault();
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value;
+
+            const body = new URLSearchParams({ username, password });
+            try {
+                const res = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: body.toString(),
+                    credentials: 'include'
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showToast(`Authenticated as ${data.username}`, 'success');
+                    closeAuthModal();
+                    await checkSession();
+                } else {
+                    showToast(data.detail || 'Login failed', 'error');
+                }
+            } catch (err) {
+                showToast('Network error during login', 'error');
+            }
+        }
+
+        // API: REGISTER
+        async function handleRegisterSubmit(e) {
+            e.preventDefault();
+            const username = document.getElementById('regUsername').value.trim();
+            const password = document.getElementById('regPassword').value;
+            const bio = document.getElementById('regBio').value.trim() || 'Confidential Member';
+
+            const body = new URLSearchParams({ username, password, bio });
+            try {
+                const res = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: body.toString(),
+                    credentials: 'include'
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showToast(`Account created for ${data.username}`, 'success');
+                    closeAuthModal();
+                    await checkSession();
+                } else {
+                    showToast(data.detail || 'Registration failed', 'error');
+                }
+            } catch (err) {
+                showToast('Network error during registration', 'error');
+            }
+        }
+
+        // API: LOGOUT
+        async function handleLogout() {
+            try {
+                await fetch('/api/logout', { method: 'POST', credentials: 'include' });
+                showToast('Session terminated', 'info');
+                exitWorkspaceView();
+                setLoggedOutUser();
+            } catch (err) {
+                showToast('Error during logout', 'error');
+            }
+        }
+
+        // API: LOAD MY WORKSPACES
+        async function loadMyWorkspaces() {
+            try {
+                const res = await fetch('/api/workspaces', { credentials: 'include' });
+                if (res.ok) {
+                    const workspaces = await res.json();
+                    state.myWorkspaces = workspaces;
+                    renderMyWorkspaces(workspaces);
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function renderMyWorkspaces(workspaces) {
+            const container = document.getElementById('myWorkspacesGrid');
+            document.getElementById('myWsCounter').textContent = `${workspaces.length} Workspace${workspaces.length === 1 ? '' : 's'}`;
+
+            if (!workspaces || workspaces.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full glass-card p-8 rounded-2xl text-center text-slate-400">
+                        <svg class="w-12 h-12 mx-auto mb-3 opacity-30 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                        <p class="text-sm font-medium text-slate-300">No workspaces initialized yet</p>
+                        <p class="text-xs text-slate-500 mt-1">Create your first repository partition above.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = workspaces.map(ws => `
+                <div class="glass-card p-5 rounded-2xl flex flex-col justify-between transition hover:-translate-y-0.5">
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xs font-mono px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">@${ws.handle}</span>
+                                <span class="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">ID #${ws.id}</span>
+                            </div>
+                            <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full ${ws.is_private ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}">
+                                ${ws.is_private ? '🔒 Private' : '🌐 Public'}
+                            </span>
+                        </div>
+                        <h3 class="text-base font-bold text-white mb-4">${escapeHtml(ws.name)}</h3>
+                    </div>
+                    <div class="flex items-center space-x-2 pt-3 border-t border-slate-800">
+                        <button onclick="openWorkspace('${ws.handle}')" class="flex-1 py-1.5 px-3 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition shadow-md shadow-indigo-600/20 text-center">
+                            Enter Vault
+                        </button>
+                        <button onclick="prefillExporter(${ws.id})" title="Compliance Export" class="p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition border border-slate-700">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // CREATE WORKSPACE MODAL
+        function openCreateWorkspaceModal() {
+            if (!state.currentUser) {
+                showToast('Please sign in to create a workspace', 'info');
+                openAuthModal('login');
+                return;
+            }
+            document.getElementById('createWorkspaceModal').classList.remove('hidden');
+        }
+        function closeCreateWorkspaceModal() {
+            document.getElementById('createWorkspaceModal').classList.add('hidden');
+        }
+
+        async function handleCreateWorkspace(e) {
+            e.preventDefault();
+            const handle = document.getElementById('wsHandleInput').value.trim();
+            const name = document.getElementById('wsNameInput').value.trim();
+            const isPrivate = document.getElementById('wsPrivateInput').checked;
+
+            const body = new URLSearchParams({ handle, name, is_private: isPrivate });
+            try {
+                const res = await fetch('/api/workspaces', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: body.toString(),
+                    credentials: 'include'
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showToast(`Workspace @${data.handle} (ID #${data.id}) initialized!`, 'success');
+                    closeCreateWorkspaceModal();
+                    await loadMyWorkspaces();
+                    openWorkspace(data.handle);
+                } else {
+                    showToast(data.detail || 'Could not create workspace', 'error');
+                }
+            } catch (err) {
+                showToast('Failed to create workspace', 'error');
+            }
+        }
+
+        // WORKSPACE EXPLORER / LOOKUP
+        function lookupWorkspace() {
+            const handle = document.getElementById('directHandleInput').value.trim();
+            if (!handle) return;
+            openWorkspace(handle);
+        }
+
+        async function openWorkspace(handle) {
+            try {
+                const res = await fetch(`/api/workspaces/${encodeURIComponent(handle)}`, { credentials: 'include' });
+                if (res.ok) {
+                    const wsData = await res.json();
+                    state.activeWorkspace = wsData;
+                    renderWorkspaceView(wsData);
+                } else {
+                    const err = await res.json();
+                    showToast(err.detail || 'Workspace not found', 'error');
+                }
+            } catch (err) {
+                showToast('Error loading workspace', 'error');
+            }
+        }
+
+        function refreshActiveWorkspace() {
+            if (state.activeWorkspace) {
+                openWorkspace(state.activeWorkspace.handle);
+            }
+        }
+
+        function renderWorkspaceView(data) {
+            document.getElementById('myWorkspacesListSection').classList.add('hidden');
+            const detailSec = document.getElementById('activeWorkspaceDetail');
+            detailSec.classList.remove('hidden');
+
+            document.getElementById('activeWsName').textContent = data.workspace;
+            document.getElementById('activeWsHandle').textContent = `@${data.handle}`;
+            
+            const idBadge = document.getElementById('activeWsIdBadge');
+            if (idBadge) {
+                if (data.id) {
+                    idBadge.textContent = `Workspace ID #${data.id}`;
+                    idBadge.classList.remove('hidden');
+                } else {
+                    idBadge.classList.add('hidden');
+                }
+            }
+            
+            document.getElementById('activeWsDocCount').textContent = `${data.documents.length} record${data.documents.length === 1 ? '' : 's'} indexed`;
+
+            const ownerBadge = document.getElementById('activeWsOwnerBadge');
+            const btnNewDoc = document.getElementById('btnNewDoc');
+
+            if (data.is_owner) {
+                ownerBadge.className = "text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+                ownerBadge.textContent = "Owner Access";
+                btnNewDoc.classList.remove('hidden');
+            } else {
+                ownerBadge.className = "text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700";
+                ownerBadge.textContent = "Public Viewer";
+                btnNewDoc.classList.add('hidden');
+            }
+
+            const docContainer = document.getElementById('activeWsDocList');
+            if (data.documents.length === 0) {
+                docContainer.innerHTML = `
+                    <div class="col-span-full glass-card p-10 rounded-2xl text-center text-slate-400">
+                        <svg class="w-12 h-12 mx-auto mb-3 opacity-30 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        <p class="text-sm font-medium text-slate-300">No documents found in this repository</p>
+                        <p class="text-xs text-slate-500 mt-1">${data.is_owner ? 'Click "+ Add Document" above to publish one.' : 'Confidential documents may be hidden from non-owners.'}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            docContainer.innerHTML = data.documents.map(doc => `
+                <div class="glass-card p-5 rounded-2xl flex flex-col justify-between transition hover:-translate-y-0.5">
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full ${doc.is_confidential ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-slate-800 text-slate-400 border border-slate-700'}">
+                                ${doc.is_confidential ? '🔒 Confidential' : '🌐 Unrestricted'}
+                            </span>
+                            <span class="text-xs font-mono text-slate-500">#${doc.id}</span>
+                        </div>
+                        <h4 class="text-base font-bold text-white mb-2 leading-snug">${escapeHtml(doc.title)}</h4>
+                        <p class="text-xs text-slate-400 line-clamp-2 font-mono mb-4 bg-slate-900/60 p-2 rounded-lg border border-slate-800/80">${escapeHtml(doc.content)}</p>
+                    </div>
+
+                    <div class="space-y-2 pt-3 border-t border-slate-800">
+                        <div class="grid grid-cols-3 gap-1.5">
+                            <button onclick='viewDocumentModal(${JSON.stringify(doc)})' class="py-1.5 px-2 text-[11px] font-medium text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition border border-slate-700 text-center flex items-center justify-center space-x-1">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                <span>Read</span>
+                            </button>
+                            <button onclick="requestShareLink(${doc.id})" class="py-1.5 px-2 text-[11px] font-medium text-indigo-300 hover:text-white bg-indigo-600/20 hover:bg-indigo-600/40 rounded-lg transition border border-indigo-500/30 text-center flex items-center justify-center space-x-1">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                                <span>Share</span>
+                            </button>
+                            <button onclick="quickExportFromWorkspace(${doc.id})" class="py-1.5 px-2 text-[11px] font-medium text-amber-300 hover:text-white bg-amber-500/10 hover:bg-amber-500/20 rounded-lg transition border border-amber-500/20 text-center flex items-center justify-center space-x-1">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                                <span>Export</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function exitWorkspaceView() {
+            state.activeWorkspace = null;
+            document.getElementById('activeWorkspaceDetail').classList.add('hidden');
+            document.getElementById('myWorkspacesListSection').classList.remove('hidden');
+            loadMyWorkspaces();
+        }
+
+        // CREATE DOCUMENT MODAL
+        function openCreateDocModal() {
+            if (!state.activeWorkspace) return;
+            document.getElementById('createDocModal').classList.remove('hidden');
+        }
+        function closeCreateDocModal() {
+            document.getElementById('createDocModal').classList.add('hidden');
+        }
+
+        async function handleCreateDocument(e) {
+            e.preventDefault();
+            if (!state.activeWorkspace) return;
+            // Use active workspace ID directly
+            let wsId = state.activeWorkspace.id;
+            if (!wsId) {
+                const match = state.myWorkspaces.find(w => w.handle.toLowerCase() === state.activeWorkspace.handle.toLowerCase());
+                if (match) wsId = match.id;
+                else wsId = 1;
+            }
+
+            const title = document.getElementById('docTitleInput').value.trim();
+            const content = document.getElementById('docContentInput').value;
+            const isConfidential = document.getElementById('docConfidentialInput').checked;
+
+            const body = new URLSearchParams({ title, content, is_confidential: isConfidential });
+            try {
+                const res = await fetch(`/api/workspaces/${wsId}/documents`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: body.toString(),
+                    credentials: 'include'
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showToast(`Document #${data.document_id} created!`, 'success');
+                    closeCreateDocModal();
+                    document.getElementById('docTitleInput').value = '';
+                    document.getElementById('docContentInput').value = '';
+                    refreshActiveWorkspace();
+                } else {
+                    showToast(data.detail || 'Could not publish document', 'error');
+                }
+            } catch (err) {
+                showToast('Failed to save document', 'error');
+            }
+        }
+
+        // VIEW DOCUMENT MODAL
+        let currentModalDoc = null;
+        function viewDocumentModal(doc) {
+            currentModalDoc = doc;
+            document.getElementById('modalDocId').textContent = `#${doc.id}`;
+            document.getElementById('modalDocTitle').textContent = doc.title;
+            document.getElementById('modalDocContent').textContent = doc.content;
+            const badge = document.getElementById('modalDocConfBadge');
+            if (doc.is_confidential) {
+                badge.className = "text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20";
+                badge.textContent = "🔒 Confidential Memo";
+            } else {
+                badge.className = "text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700";
+                badge.textContent = "🌐 Public Record";
+            }
+            document.getElementById('viewDocModal').classList.remove('hidden');
+        }
+        function closeViewDocModal() {
+            document.getElementById('viewDocModal').classList.add('hidden');
+        }
+        function copyDocContent() {
+            if (!currentModalDoc) return;
+            navigator.clipboard.writeText(currentModalDoc.content);
+            showToast('Document content copied!', 'success');
+        }
+
+        // SHARE LINK MODAL
+        async function requestShareLink(docId) {
+            try {
+                const res = await fetch(`/api/documents/${docId}/share-link`, { credentials: 'include' });
+                const data = await res.json();
+                if (res.ok) {
+                    document.getElementById('generatedShareUrlInput').value = window.location.origin + data.share_url;
+                    document.getElementById('shareLinkModal').classList.remove('hidden');
+                } else {
+                    showToast(data.detail || 'Failed to generate share link (Login required)', 'error');
+                    if (res.status === 401) openAuthModal('login');
+                }
+            } catch (err) {
+                showToast('Error generating share link', 'error');
+            }
+        }
+        function closeShareLinkModal() {
+            document.getElementById('shareLinkModal').classList.add('hidden');
+        }
+
+        // TAB 2: EXPORTER LOGIC
+        function prefillExporter(wsId) {
+            switchTab('exporter');
+            document.getElementById('exportWsId').value = wsId;
+            document.getElementById('exportDocId').value = 1;
+        }
+        function quickExportFromWorkspace(docId) {
+            switchTab('exporter');
+            let wsId = 1;
+            if (state.activeWorkspace) {
+                const match = state.myWorkspaces.find(w => w.handle.toLowerCase() === state.activeWorkspace.handle.toLowerCase());
+                if (match) wsId = match.id;
+            }
+            document.getElementById('exportWsId').value = wsId;
+            document.getElementById('exportDocId').value = docId;
+            executeDocumentExport();
+        }
+
+        async function executeDocumentExport() {
+            const wsId = document.getElementById('exportWsId').value;
+            const docId = document.getElementById('exportDocId').value;
+
+            if (!wsId || !docId) {
+                showToast('Workspace ID and Document ID required', 'error');
+                return;
+            }
+
+            const statusBadge = document.getElementById('exportStatusBadge');
+            const resultBox = document.getElementById('exportResultContainer');
+
+            statusBadge.className = "text-xs font-mono text-indigo-400 animate-pulse";
+            statusBadge.textContent = "Querying Archive...";
+
+            try {
+                const res = await fetch(`/api/workspaces/${wsId}/documents/${docId}/export`, { credentials: 'include' });
+                const data = await res.json();
+
+                if (res.ok) {
+                    statusBadge.className = "text-xs font-mono text-emerald-400";
+                    statusBadge.textContent = "Export Ready";
+
+                    resultBox.innerHTML = `
+                        <div class="space-y-4">
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-900/80 p-3.5 rounded-xl border border-slate-800 text-xs">
+                                <div>
+                                    <span class="text-slate-500 block text-[10px] uppercase">Export Signer</span>
+                                    <span class="font-bold text-slate-200">${escapeHtml(data.exported_by)}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500 block text-[10px] uppercase">Record Index</span>
+                                    <span class="font-mono text-indigo-400 font-bold">#${data.document.id}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500 block text-[10px] uppercase">Classification</span>
+                                    <span class="font-semibold ${data.document.is_confidential ? 'text-amber-400' : 'text-emerald-400'}">${data.document.is_confidential ? 'Confidential' : 'Unrestricted'}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500 block text-[10px] uppercase">Archive Status</span>
+                                    <span class="text-emerald-400 font-medium">Verified</span>
+                                </div>
+                            </div>
+
+                            <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4">
+                                <div class="flex items-center justify-between mb-2">
+                                    <h4 class="text-sm font-bold text-white">${escapeHtml(data.document.title)}</h4>
+                                    <button onclick="copyExportedContent()" class="text-xs text-indigo-400 hover:text-indigo-300 font-medium flex items-center space-x-1">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                                        <span>Copy Content</span>
+                                    </button>
+                                </div>
+                                <pre id="exportedContentBody" class="text-xs text-slate-300 font-mono whitespace-pre-wrap leading-relaxed select-text bg-slate-950/60 p-3 rounded-lg border border-slate-800">${escapeHtml(data.document.content)}</pre>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    statusBadge.className = "text-xs font-mono text-red-400";
+                    statusBadge.textContent = "Export Failed";
+
+                    resultBox.innerHTML = `
+                        <div class="p-6 rounded-xl bg-red-950/30 border border-red-500/30 text-center">
+                            <svg class="w-10 h-10 mx-auto text-red-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                            <h4 class="text-sm font-bold text-red-200">Export Request Rejected</h4>
+                            <p class="text-xs text-red-300/80 mt-1">${escapeHtml(data.detail || 'Authorization failed')}</p>
+                            ${res.status === 401 ? '<button onclick="openAuthModal(\'login\')" class="mt-3 px-3 py-1.5 text-xs font-semibold text-white bg-red-600 rounded-lg">Sign In</button>' : ''}
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                statusBadge.className = "text-xs font-mono text-red-400";
+                statusBadge.textContent = "Network Error";
+            }
+        }
+        function copyExportedContent() {
+            const body = document.getElementById('exportedContentBody');
+            if (body) {
+                navigator.clipboard.writeText(body.innerText);
+                showToast('Exported memo copied to clipboard', 'success');
+            }
+        }
+
+        // SHARED DOCUMENT VIEWER (Direct Link Landing)
+        async function fetchSharedDocument(docId, sig) {
+            const resultBox = document.getElementById('sharedDocResultContainer');
+            if (!docId || !sig) {
+                resultBox.innerHTML = `
+                    <div class="text-center py-12 text-slate-500 text-sm">
+                        <p>Invalid shared document parameters.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            try {
+                const res = await fetch(`/share?doc_id=${encodeURIComponent(docId)}&sig=${encodeURIComponent(sig)}`);
+                const data = await res.json();
+
+                if (res.ok && data.shared_document) {
+                    const doc = data.shared_document;
+                    resultBox.innerHTML = `
+                        <div class="space-y-4">
+                            <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-6 space-y-4">
+                                <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                                    <div>
+                                        <span class="text-xs font-mono text-indigo-400">Document #${doc.id}</span>
+                                        <h3 class="text-xl font-bold text-white mt-1">${escapeHtml(doc.title)}</h3>
+                                    </div>
+                                    <button onclick="copySharedContent()" class="text-xs text-indigo-400 hover:text-indigo-300 font-medium flex items-center space-x-1">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                                        <span>Copy Content</span>
+                                    </button>
+                                </div>
+                                <pre id="sharedDocContentBody" class="text-xs text-slate-200 font-mono whitespace-pre-wrap leading-relaxed select-text bg-slate-950/70 p-4 rounded-xl border border-slate-800/80">${escapeHtml(doc.content)}</pre>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    resultBox.innerHTML = `
+                        <div class="p-6 rounded-xl bg-red-950/30 border border-red-500/30 text-center">
+                            <h4 class="text-sm font-bold text-red-200">Document Unavailable</h4>
+                            <p class="text-xs text-red-300/80 mt-1">${escapeHtml(data.detail || data.message || 'Link is invalid or has expired.')}</p>
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                resultBox.innerHTML = `
+                    <div class="p-6 rounded-xl bg-red-950/30 border border-red-500/30 text-center">
+                        <h4 class="text-sm font-bold text-red-200">Network Error</h4>
+                        <p class="text-xs text-red-300/80 mt-1">Unable to load document.</p>
+                    </div>
+                `;
+            }
+        }
+        function copySharedContent() {
+            const body = document.getElementById('sharedDocContentBody');
+            if (body) {
+                navigator.clipboard.writeText(body.innerText);
+                showToast('Shared document content copied!', 'success');
+            }
+        }
+
+        // UTILITIES
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+        function copyToClipboard(elementId) {
+            const input = document.getElementById(elementId);
+            if (input) {
+                input.select();
+                navigator.clipboard.writeText(input.value);
+                showToast('Copied to clipboard!', 'success');
+            }
+        }
+
+        // INITIALIZATION
+        window.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            if (params.has('doc_id') && params.has('sig')) {
+                switchTab('share-viewer');
+                fetchSharedDocument(params.get('doc_id'), params.get('sig'));
+            } else {
+                checkSession();
+            }
+        });
+    </script>
+</body>
+</html>

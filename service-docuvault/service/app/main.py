@@ -1,5 +1,7 @@
+import os
 from fastapi import FastAPI, Request, Depends, HTTPException, Form
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 
 from .database import get_db, init_db
@@ -14,6 +16,10 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="DocuVault API", lifespan=lifespan)
+
+STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
+os.makedirs(STATIC_DIR, exist_ok=True)
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 def get_current_user(request: Request):
     user_id = request.cookies.get("user_id")
@@ -32,35 +38,10 @@ def get_current_user(request: Request):
 
 @app.get("/", response_class=HTMLResponse)
 def index():
-    return """
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <title>DocuVault - Confidential Document Workspaces</title>
-        <script src="https://cdn.tailwindcss.com"></script>
-    </head>
-    <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-center items-center p-6">
-        <div class="max-w-xl w-full bg-slate-800 border border-slate-700 rounded-xl p-8 shadow-2xl">
-            <div class="flex items-center space-x-3 mb-6">
-                <span class="text-3xl">🔐</span>
-                <h1 class="text-2xl font-bold text-white">DocuVault</h1>
-            </div>
-            <p class="text-slate-400 mb-6 leading-relaxed">
-                Enterprise confidential document management and workspace collaboration platform.
-            </p>
-            <div class="grid grid-cols-2 gap-4">
-                <a href="/docs" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 px-4 rounded-lg text-center transition">
-                    Swagger API Docs
-                </a>
-                <a href="/share" class="bg-slate-700 hover:bg-slate-600 text-slate-200 font-medium py-2.5 px-4 rounded-lg text-center transition">
-                    Shared Viewer
-                </a>
-            </div>
-        </div>
-    </body>
-    </html>
-    """
+    index_file = os.path.join(STATIC_DIR, "index.html")
+    if os.path.exists(index_file):
+        return FileResponse(index_file, headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
+    return HTMLResponse("<h1>DocuVault API</h1>")
 
 @app.post("/api/register")
 def register(username: str = Form(...), password: str = Form(...), bio: str = Form("Confidential Member")):
@@ -176,8 +157,10 @@ def get_workspace_documents(handle: str, user=Depends(get_current_user)):
     conn.close()
 
     return {
+        "id": ws["id"],
         "workspace": ws["name"],
         "handle": ws["handle"],
+        "owner_id": ws["owner_id"],
         "is_owner": is_owner,
         "documents": [dict(d) for d in docs],
     }

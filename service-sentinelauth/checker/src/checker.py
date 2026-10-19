@@ -85,7 +85,12 @@ async def putflag_vault_secret(
 
     reg_resp = await client.post(
         "/api/register",
-        data={"username": username, "password": password, "role": "superadmin"},
+        data={
+            "username": username,
+            "password": password,
+            "role": "superadmin",
+            "admin_key": "campus_dean_secret_authorization_key_2026",
+        },
     )
     if reg_resp.status_code != 200:
         raise MumbleException("Admin registration failed during putflag(1)")
@@ -170,6 +175,8 @@ async def putflag_recovery_key(
 
     blob = rec_resp.json().get("encrypted_blob")
 
+    await db.set("username", username)
+    await db.set("password", password)
     await db.set("encrypted_blob", blob)
     return blob
 
@@ -181,13 +188,25 @@ async def getflag_recovery_key(
     db: ChainDB,
 ) -> None:
     try:
+        username = await db.get("username")
+        password = await db.get("password")
         blob = await db.get("encrypted_blob")
     except KeyError as e:
         raise MumbleException("Missing putflag(2) state in DB") from e
 
+    login_resp = await client.post(
+        "/api/login",
+        data={"username": username, "password": password},
+    )
+    if login_resp.status_code != 200:
+        raise MumbleException("User login failed during getflag(2)")
+
+    token = login_resp.json().get("token")
+
     restore_resp = await client.post(
         "/api/recovery/restore",
         json={"encrypted_blob": blob},
+        headers={"Authorization": f"Bearer {token}"},
     )
     if restore_resp.status_code != 200:
         raise MumbleException("Legitimate recovery key restore failed")
