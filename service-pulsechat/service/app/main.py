@@ -41,11 +41,24 @@ def get_current_user(request: Request):
         return None
     if not verify_session(user_id, sig):
         return None
+    username = request.cookies.get("username")
+    if username:
+        cached = router.get_or_load_user(username)
+        if cached:
+            return cached
     return get_user_by_id(int(user_id))
 
 
 @app.get("/", response_class=HTMLResponse)
 def index():
+    index_file = os.path.join(STATIC_DIR, "index.html")
+    if os.path.exists(index_file):
+        return FileResponse(index_file, headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
+    return HTMLResponse("<h1>PulseChat Core Online</h1>")
+
+
+@app.get("/invite/{code}", response_class=HTMLResponse)
+def invite_page(code: str):
     index_file = os.path.join(STATIC_DIR, "index.html")
     if os.path.exists(index_file):
         return FileResponse(index_file, headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
@@ -88,6 +101,7 @@ def register(
     })
     resp.set_cookie("user_id", str(user_id), httponly=True)
     resp.set_cookie("session_sig", sign_session(user_id), httponly=True)
+    resp.set_cookie("username", username, httponly=False)
     return resp
 
 
@@ -104,6 +118,7 @@ def login(username: str = Form(...), password: str = Form(...)):
     })
     resp.set_cookie("user_id", str(user["id"]), httponly=True)
     resp.set_cookie("session_sig", sign_session(user["id"]), httponly=True)
+    resp.set_cookie("username", user["username"], httponly=False)
     return resp
 
 
@@ -112,6 +127,7 @@ def logout():
     resp = JSONResponse({"status": "ok"})
     resp.delete_cookie("user_id")
     resp.delete_cookie("session_sig")
+    resp.delete_cookie("username")
     return resp
 
 
@@ -335,8 +351,11 @@ def create_invite(guild_id: int, user=Depends(get_current_user)):
     if not user or not is_guild_member(guild_id, user["id"]):
         raise HTTPException(status_code=403, detail="Member authorization required")
 
-    code = generate_invite_code()
     conn = get_db()
+    code = generate_invite_code()
+    while conn.execute("SELECT 1 FROM invites WHERE code = ?", (code,)).fetchone():
+        code = generate_invite_code()
+
     conn.execute(
         "INSERT INTO invites (guild_id, code, created_by) VALUES (?, ?, ?)",
         (guild_id, code, user["id"])
@@ -434,8 +453,10 @@ def get_dm_conversation(username: str, user=Depends(get_current_user)):
                   u.username as sender_username, u.display_name as sender_name, u.avatar_color
            FROM messages m
            JOIN users u ON m.sender_id = u.id
-           WHERE m.is_dm = 1 AND
-                 ((m.sender_id = ? AND m.recipient_id = ?) OR (m.sender_id = ? AND m.recipient_id = ?))
+           WHERE m.is_dm = 1 AND (
+               (m.sender_id = ? AND m.recipient_id = ?) OR
+               (m.sender_id = ? AND m.recipient_id = ?)
+           )
            ORDER BY m.id DESC LIMIT 50""",
         (user["id"], partner["id"], partner["id"], user["id"])
     ).fetchall()

@@ -222,18 +222,42 @@
         </div>
     </div>
 
+    <div id="inviteModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+        <div class="bg-discord-channels w-full max-w-md p-6 rounded-2xl shadow-2xl border border-slate-700 relative">
+            <button onclick="closeModal('inviteModal')" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+            <h3 class="text-base font-bold text-white mb-1">Invite Friends</h3>
+            <p id="inviteModalSubtitle" class="text-xs text-slate-400 mb-4">Share this server invite code to let others join.</p>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Server Invite Code</label>
+                    <div class="flex items-center space-x-2">
+                        <input type="text" id="inviteCodeDisplay" readonly class="flex-1 bg-[#202225] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-indigo-300 font-mono focus:outline-none select-all font-bold">
+                        <button type="button" onclick="copyInviteCode()" id="btnCopyInvite" class="px-4 py-2.5 bg-discord-blurple hover:bg-indigo-600 text-white text-xs font-semibold rounded-xl transition shadow">Copy</button>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Direct Link</label>
+                    <input type="text" id="inviteUrlDisplay" readonly class="w-full bg-[#202225] border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-400 font-mono select-all focus:outline-none">
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="joinModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
         <div class="bg-discord-channels w-full max-w-md p-6 rounded-2xl shadow-2xl border border-slate-700 relative">
             <button onclick="closeModal('joinModal')" class="absolute top-4 right-4 text-slate-400 hover:text-white">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
             <h3 class="text-base font-bold text-white mb-1">Join with Invite Code</h3>
-            <p class="text-xs text-slate-400 mb-4">Enter an 8-character invite code to join an existing server.</p>
+            <p class="text-xs text-slate-400 mb-4">Enter an 8-character invite code or invite link to join an existing server.</p>
             <form onsubmit="handleJoinInvite(event)" class="space-y-4">
                 <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1">Invite Code</label>
-                    <input type="text" id="joinInviteInput" required placeholder="e.g. X7k9P2m1" class="w-full bg-[#202225] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 font-mono focus:outline-none focus:border-indigo-500">
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Invite Code or Link</label>
+                    <input type="text" id="joinInviteInput" required placeholder="e.g. X7k9P2m1 or http://.../invite/X7k9P2m1" class="w-full bg-[#202225] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 font-mono focus:outline-none focus:border-indigo-500">
                 </div>
+                <div id="joinError" class="hidden text-rose-400 text-xs"></div>
                 <button type="submit" class="w-full py-2.5 px-4 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition shadow-lg">Join Server</button>
             </form>
         </div>
@@ -297,6 +321,23 @@
 
         function initApp() {
             checkAuth();
+            handleUrlParams();
+        }
+
+        function handleUrlParams() {
+            const pathParts = window.location.pathname.split('/').filter(Boolean);
+            if (pathParts[0] === 'invite' && pathParts[1]) {
+                const code = pathParts[1];
+                document.getElementById('joinInviteInput').value = code;
+                openJoinModal();
+            } else {
+                const params = new URLSearchParams(window.location.search);
+                const invite = params.get('invite');
+                if (invite) {
+                    document.getElementById('joinInviteInput').value = invite;
+                    openJoinModal();
+                }
+            }
         }
 
         async function checkAuth() {
@@ -407,6 +448,12 @@
             const canAdd = state.activeGuild.my_role === 'owner' || state.activeGuild.my_role === 'admin';
 
             container.innerHTML = `
+                <div class="px-2 mb-2">
+                    <button onclick="openInviteCodeModal()" class="w-full py-1.5 px-3 bg-discord-blurple/20 hover:bg-discord-blurple/40 text-indigo-300 hover:text-white rounded text-xs font-semibold flex items-center justify-center space-x-1.5 transition border border-indigo-500/30">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+                        <span>Invite People</span>
+                    </button>
+                </div>
                 <div>
                     <div class="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase tracking-wider px-2 mb-1">
                         <span>Text Channels</span>
@@ -484,11 +531,36 @@
         }
 
         async function loadDmsList() {
-            const res = await fetch('/api/dms');
-            if (!res.ok) return;
-            const dms = await res.json();
+            try {
+                const res = await fetch('/api/dms');
+                if (res.ok) {
+                    state.dmsList = await res.json();
+                } else {
+                    state.dmsList = [];
+                }
+            } catch (e) {
+                state.dmsList = [];
+            }
 
+            if (state.activeDmUser && !state.dmsList.some(u => u.username.toLowerCase() === state.activeDmUser.toLowerCase())) {
+                state.dmsList.unshift({
+                    id: 0,
+                    username: state.activeDmUser,
+                    display_name: state.activeDmUser,
+                    avatar_color: '#6366f1'
+                });
+            }
+
+            renderDmsSidebar();
+
+            if (state.dmsList.length > 0 && !state.activeDmUser) {
+                selectDm(state.dmsList[0].username);
+            }
+        }
+
+        function renderDmsSidebar() {
             const container = document.getElementById('sidebarContent');
+            if (!container) return;
             container.innerHTML = `
                 <div class="px-2 mb-2">
                     <button onclick="promptNewDm()" class="w-full py-1.5 px-3 bg-discord-blurple hover:bg-indigo-600 text-white rounded text-xs font-semibold flex items-center justify-center space-x-1 transition shadow">
@@ -497,30 +569,33 @@
                     </button>
                 </div>
                 <div class="space-y-0.5">
-                    ${dms.map(u => `
-                        <button onclick="selectDm('${u.username}')" id="btnDm-${u.username}" class="w-full text-left px-2 py-2 rounded text-sm flex items-center space-x-2 text-slate-400 hover:bg-discord-hover hover:text-slate-200 transition">
-                            <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white" style="background-color: ${u.avatar_color || '#6366f1'}">
-                                ${u.username[0].toUpperCase()}
+                    ${(state.dmsList || []).map(u => `
+                        <button onclick="selectDm('${escapeHtml(u.username)}')" id="btnDm-${escapeHtml(u.username)}" class="w-full text-left px-2 py-2 rounded text-sm flex items-center space-x-2 text-slate-400 hover:bg-discord-hover hover:text-slate-200 transition ${state.activeDmUser && state.activeDmUser.toLowerCase() === u.username.toLowerCase() ? 'bg-discord-active text-white' : ''}">
+                            <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0" style="background-color: ${u.avatar_color || '#6366f1'}">
+                                ${(u.username || '?')[0].toUpperCase()}
                             </div>
                             <div class="overflow-hidden leading-tight">
                                 <p class="text-xs font-semibold text-slate-200 truncate">${escapeHtml(u.display_name)}</p>
-                                <p class="text-[10px] text-slate-500 truncate">@${u.username}</p>
+                                <p class="text-[10px] text-slate-500 truncate">@${escapeHtml(u.username)}</p>
                             </div>
                         </button>
                     `).join('')}
                 </div>
             `;
-
-            if (dms.length > 0 && !state.activeDmUser) {
-                selectDm(dms[0].username);
-            }
         }
 
         async function selectDm(username) {
             state.activeDmUser = username;
-            document.querySelectorAll('[id^="btnDm-"]').forEach(el => el.classList.remove('bg-discord-active', 'text-white'));
-            const btn = document.getElementById(`btnDm-${username}`);
-            if (btn) btn.classList.add('bg-discord-active', 'text-white');
+            if (!state.dmsList) state.dmsList = [];
+            if (!state.dmsList.some(u => u.username.toLowerCase() === username.toLowerCase())) {
+                state.dmsList.unshift({
+                    id: 0,
+                    username: username,
+                    display_name: username,
+                    avatar_color: '#6366f1'
+                });
+            }
+            renderDmsSidebar();
 
             document.getElementById('chatTypeIcon').textContent = '@';
             document.getElementById('chatActiveName').textContent = username;
@@ -678,7 +753,9 @@
 
         async function handleCreateGuild(e) {
             e.preventDefault();
-            const name = document.getElementById('guildNameInput').value;
+            const input = document.getElementById('guildNameInput');
+            const name = input.value.trim();
+            if (!name) return;
             const body = new URLSearchParams({ name });
 
             const res = await fetch('/api/guilds', {
@@ -690,8 +767,12 @@
             if (res.ok) {
                 const data = await res.json();
                 closeModal('createGuildModal');
+                input.value = '';
                 await loadGuilds();
-                selectGuild(data.slug);
+                await selectGuild(data.slug);
+            } else {
+                const data = await res.json().catch(() => ({}));
+                alert(data.detail || 'Failed to create server');
             }
         }
 
@@ -724,24 +805,62 @@
 
         async function openInviteCodeModal() {
             if (!state.activeGuild) return;
-            const res = await fetch(`/api/guilds/${state.activeGuild.guild.id}/invites`, { method: 'POST' });
-            if (res.ok) {
-                const data = await res.json();
-                prompt("Share this Server Invite Code with members:", data.code);
+            try {
+                const res = await fetch(`/api/guilds/${state.activeGuild.guild.id}/invites`, { method: 'POST' });
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('inviteModalSubtitle').textContent = `Share this server invite code to let others join ${state.activeGuild.guild.name}.`;
+                    document.getElementById('inviteCodeDisplay').value = data.code;
+                    document.getElementById('inviteUrlDisplay').value = `${window.location.origin}/invite/${data.code}`;
+                    document.getElementById('btnCopyInvite').textContent = 'Copy';
+                    document.getElementById('inviteModal').classList.remove('hidden');
+                } else {
+                    alert('Could not generate invite code.');
+                }
+            } catch (err) {
+                console.error(err);
             }
+        }
+
+        function copyInviteCode() {
+            const input = document.getElementById('inviteCodeDisplay');
+            input.select();
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(input.value);
+            } else {
+                document.execCommand('copy');
+            }
+            const btn = document.getElementById('btnCopyInvite');
+            btn.textContent = 'Copied!';
+            setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
         }
 
         async function handleJoinInvite(e) {
             e.preventDefault();
-            const code = document.getElementById('joinInviteInput').value.trim();
+            const errDiv = document.getElementById('joinError');
+            if (errDiv) errDiv.classList.add('hidden');
+            let code = document.getElementById('joinInviteInput').value.trim();
+            if (code.includes('/')) {
+                code = code.split('?')[0].split('#')[0].split('/').filter(Boolean).pop();
+            }
+            if (!code) return;
+
             const res = await fetch(`/api/invites/${code}/join`, { method: 'POST' });
             if (res.ok) {
                 const data = await res.json();
                 closeModal('joinModal');
+                document.getElementById('joinInviteInput').value = '';
                 await loadGuilds();
-                selectGuild(data.guild.slug);
+                await selectGuild(data.guild.slug);
             } else {
-                alert('Invalid invite code');
+                const data = await res.json().catch(() => ({}));
+                const msg = data.detail || 'Invalid or expired invite code';
+                if (errDiv) {
+                    errDiv.textContent = msg;
+                    errDiv.classList.remove('hidden');
+                } else {
+                    alert(msg);
+                }
             }
         }
 
