@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PulseChat — Real-Time Communities</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        discord: {
+                            sidebar: '#202225',
+                            channels: '#2f3136',
+                            chat: '#36393f',
+                            hover: '#393c43',
+                            active: '#40444b',
+                            blurple: '#5865f2',
+                            green: '#3ba55d'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #202225; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #18191c; }
+    </style>
+</head>
+<body class="bg-discord-chat text-slate-100 flex h-screen w-screen overflow-hidden font-sans select-none">
+
+    <div class="w-[72px] bg-discord-sidebar flex flex-col items-center py-3 space-y-2 shrink-0 z-20">
+        <button onclick="openDmView()" id="btnNavDms" class="w-12 h-12 rounded-3xl hover:rounded-2xl bg-discord-blurple text-white flex items-center justify-center transition-all duration-200 shadow-md group relative">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+            <span class="absolute left-16 bg-slate-900 text-white text-xs px-2.5 py-1 rounded-md shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">Direct Messages</span>
+        </button>
+
+        <div class="w-8 h-[2px] bg-slate-700/60 rounded"></div>
+
+        <div id="guildNavList" class="flex-1 w-full flex flex-col items-center space-y-2 overflow-y-auto overflow-x-hidden"></div>
+
+        <div class="w-8 h-[2px] bg-slate-700/60 rounded"></div>
+
+        <button onclick="openCreateGuildModal()" class="w-12 h-12 rounded-3xl hover:rounded-2xl bg-discord-channels text-emerald-400 hover:bg-emerald-600 hover:text-white flex items-center justify-center transition-all duration-200 group relative">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            <span class="absolute left-16 bg-slate-900 text-white text-xs px-2.5 py-1 rounded-md shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">Create Server</span>
+        </button>
+
+        <button onclick="openJoinModal()" class="w-12 h-12 rounded-3xl hover:rounded-2xl bg-discord-channels text-indigo-400 hover:bg-indigo-600 hover:text-white flex items-center justify-center transition-all duration-200 group relative">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+            <span class="absolute left-16 bg-slate-900 text-white text-xs px-2.5 py-1 rounded-md shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">Join with Invite</span>
+        </button>
+    </div>
+
+    <div class="w-60 bg-discord-channels flex flex-col shrink-0 z-10">
+        <div id="sidebarHeader" class="h-12 px-4 border-b border-slate-800/80 flex items-center justify-between font-bold text-white shadow-sm">
+            <span id="sidebarTitle" class="truncate">PulseChat</span>
+            <div id="sidebarHeaderActions"></div>
+        </div>
+
+        <div id="sidebarContent" class="flex-1 overflow-y-auto p-2 space-y-4"></div>
+
+        <div id="userFooter" class="h-14 bg-[#292b2f] px-2 flex items-center justify-between border-t border-slate-800">
+            <div class="flex items-center space-x-2 overflow-hidden cursor-pointer" onclick="openProfileModal()">
+                <div id="footerAvatar" class="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-xs font-bold text-white shrink-0">?</div>
+                <div class="overflow-hidden leading-tight">
+                    <p id="footerDisplayName" class="text-xs font-bold text-slate-200 truncate">Guest</p>
+                    <p id="footerUsername" class="text-[10px] text-slate-400 truncate">Not signed in</p>
+                </div>
+            </div>
+            <div id="footerActions" class="flex items-center space-x-1 text-slate-400">
+                <button onclick="openAuthModal()" id="btnSignPrompt" class="px-2.5 py-1 text-xs font-medium bg-discord-blurple text-white rounded hover:bg-indigo-600 transition">Sign In</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex-1 flex flex-col bg-discord-chat min-w-0">
+        <div class="h-12 px-4 border-b border-slate-800 flex items-center justify-between shrink-0 shadow-sm">
+            <div class="flex items-center space-x-2 overflow-hidden">
+                <span id="chatTypeIcon" class="text-slate-400 font-semibold text-lg">#</span>
+                <h2 id="chatActiveName" class="font-bold text-white text-sm truncate">welcome</h2>
+                <div class="h-4 w-[1px] bg-slate-700 mx-2"></div>
+                <p id="chatActiveTopic" class="text-xs text-slate-400 truncate max-w-xl"></p>
+            </div>
+            <div class="flex items-center space-x-3 text-slate-400">
+                <button onclick="openUnfurlModal()" title="Link Preview" class="hover:text-slate-200 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <div id="messagesContainer" class="flex-1 overflow-y-auto p-4 space-y-4 select-text">
+            <div class="text-center py-20 text-slate-500 text-sm">
+                <svg class="w-12 h-12 mx-auto mb-3 opacity-30 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                <p>Select a channel or direct message to begin chatting.</p>
+            </div>
+        </div>
+
+        <div class="p-4 shrink-0">
+            <form onsubmit="handleSendMessage(event)" class="bg-[#40444b] rounded-lg flex items-center px-4 py-2.5 space-x-2">
+                <input type="text" id="messageInput" placeholder="Message #general" class="flex-1 bg-transparent text-sm text-slate-200 placeholder-slate-500 focus:outline-none">
+                <button type="submit" class="text-slate-400 hover:text-indigo-400 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div id="authModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+        <div class="bg-discord-channels w-full max-w-md p-6 rounded-2xl shadow-2xl border border-slate-700 relative">
+            <button onclick="closeModal('authModal')" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+
+            <div class="flex rounded-xl bg-slate-900 p-1 mb-6 border border-slate-800">
+                <button id="tabLogin" onclick="setAuthTab('login')" class="flex-1 py-1.5 text-xs font-semibold rounded-lg bg-discord-blurple text-white">Sign In</button>
+                <button id="tabRegister" onclick="setAuthTab('register')" class="flex-1 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white">Create Account</button>
+            </div>
+
+            <form id="formLogin" onsubmit="handleLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Username</label>
+                    <input type="text" id="loginUsername" required class="w-full bg-[#202225] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Password</label>
+                    <input type="password" id="loginPassword" required class="w-full bg-[#202225] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-indigo-500">
+                </div>
+                <button type="submit" class="w-full py-2.5 px-4 text-sm font-medium text-white bg-discord-blurple hover:bg-indigo-600 rounded-xl transition shadow-lg">Sign In</button>
+                <div class="text-center pt-2">
+                    <button type="button" onclick="openRecoverModal()" class="text-xs text-indigo-400 hover:underline">Forgot your password? Account recovery</button>
+                </div>
+            </form>
+
+            <form id="formRegister" onsubmit="handleRegister(event)" class="hidden space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Username</label>
+                    <input type="text" id="regUsername" required class="w-full bg-[#202225] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Display Name</label>
+                    <input type="text" id="regDisplayName" class="w-full bg-[#202225] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Password</label>
+                    <input type="password" id="regPassword" required class="w-full bg-[#202225] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-indigo-500">
+                </div>
+                <button type="submit" class="w-full py-2.5 px-4 text-sm font-medium text-white bg-discord-blurple hover:bg-indigo-600 rounded-xl transition shadow-lg">Create Account</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="recoverModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+        <div class="bg-discord-channels w-full max-w-md p-6 rounded-2xl shadow-2xl border border-slate-700 relative">
+            <button onclick="closeModal('recoverModal')" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+            <h3 class="text-base font-bold text-white mb-1">Account Recovery</h3>
+            <p class="text-xs text-slate-400 mb-4">Verify account identity using your security recovery key.</p>
+            <form onsubmit="handleRecover(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Username</label>
+                    <input type="text" id="recoverUsername" required class="w-full bg-[#202225] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Security Recovery Key</label>
+                    <input type="text" id="recoverKey" required placeholder="rec_..." class="w-full bg-[#202225] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 font-mono focus:outline-none focus:border-indigo-500">
+                </div>
+                <button type="submit" class="w-full py-2.5 px-4 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition shadow-lg">Verify Key & Access Account</button>
+            </form>
+            <div id="recoverResult" class="mt-4 hidden p-3 rounded-lg bg-emerald-950/60 border border-emerald-500/30 text-xs text-emerald-200"></div>
+        </div>
+    </div>
+
+    <div id="createGuildModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+        <div class="bg-discord-channels w-full max-w-md p-6 rounded-2xl shadow-2xl border border-slate-700 relative">
+            <button onclick="closeModal('createGuildModal')" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+            <h3 class="text-base font-bold text-white mb-1">Create a Server</h3>
+            <p class="text-xs text-slate-400 mb-4">Your server is where you and your friends hang out.</p>
+            <form onsubmit="handleCreateGuild(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Server Name</label>
+                    <input type="text" id="guildNameInput" required placeholder="e.g. Pixel Pioneers" class="w-full bg-[#202225] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-indigo-500">
+                </div>
+                <button type="submit" class="w-full py-2.5 px-4 text-sm font-medium text-white bg-discord-blurple hover:bg-indigo-600 rounded-xl transition shadow-lg">Create</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="createChannelModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+        <div class="bg-discord-channels w-full max-w-md p-6 rounded-2xl shadow-2xl border border-slate-700 relative">
+            <button onclick="closeModal('createChannelModal')" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+            <h3 class="text-base font-bold text-white mb-1">Create Text Channel</h3>
+            <p class="text-xs text-slate-400 mb-4">Add a conversation room to this server.</p>
+            <form onsubmit="handleCreateChannel(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Channel Name</label>
+                    <div class="flex items-center bg-[#202225] border border-slate-700 rounded-xl px-3 focus-within:border-indigo-500">
+                        <span class="text-slate-500 text-sm font-bold">#</span>
+                        <input type="text" id="channelNameInput" required placeholder="announcements" class="w-full bg-transparent py-2.5 px-2 text-sm text-slate-100 focus:outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Channel Topic</label>
+                    <input type="text" id="channelTopicInput" placeholder="Guidelines or notes for this channel" class="w-full bg-[#202225] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-indigo-500">
+                </div>
+                <div class="flex items-center space-x-2 pt-1">
+                    <input type="checkbox" id="channelPrivateInput" class="rounded bg-slate-900 border-slate-700 text-indigo-600 focus:ring-0">
+                    <label for="channelPrivateInput" class="text-xs text-slate-300">Private Channel (Admin / Owner only)</label>
+                </div>
+                <button type="submit" class="w-full py-2.5 px-4 text-sm font-medium text-white bg-discord-blurple hover:bg-indigo-600 rounded-xl transition shadow-lg">Create Channel</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="joinModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+        <div class="bg-discord-channels w-full max-w-md p-6 rounded-2xl shadow-2xl border border-slate-700 relative">
+            <button onclick="closeModal('joinModal')" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+            <h3 class="text-base font-bold text-white mb-1">Join with Invite Code</h3>
+            <p class="text-xs text-slate-400 mb-4">Enter an 8-character invite code to join an existing server.</p>
+            <form onsubmit="handleJoinInvite(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Invite Code</label>
+                    <input type="text" id="joinInviteInput" required placeholder="e.g. X7k9P2m1" class="w-full bg-[#202225] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 font-mono focus:outline-none focus:border-indigo-500">
+                </div>
+                <button type="submit" class="w-full py-2.5 px-4 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition shadow-lg">Join Server</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="unfurlModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+        <div class="bg-discord-channels w-full max-w-md p-6 rounded-2xl shadow-2xl border border-slate-700 relative">
+            <button onclick="closeModal('unfurlModal')" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+            <h3 class="text-base font-bold text-white mb-1">URL Metadata Inspector</h3>
+            <p class="text-xs text-slate-400 mb-4">Generate link preview card for external or webhook links.</p>
+            <form onsubmit="handleUnfurlPreview(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Target Web URL</label>
+                    <input type="text" id="unfurlUrlInput" required placeholder="https://example.com" class="w-full bg-[#202225] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 font-mono focus:outline-none focus:border-indigo-500">
+                </div>
+                <button type="submit" class="w-full py-2.5 px-4 text-sm font-medium text-white bg-discord-blurple hover:bg-indigo-600 rounded-xl transition shadow-lg">Inspect & Fetch Preview</button>
+            </form>
+            <div id="unfurlOutput" class="mt-4 hidden p-3 rounded-lg bg-slate-900 border border-slate-700 text-xs"></div>
+        </div>
+    </div>
+
+    <div id="profileModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+        <div class="bg-discord-channels w-full max-w-md p-6 rounded-2xl shadow-2xl border border-slate-700 relative">
+            <button onclick="closeModal('profileModal')" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+            <h3 class="text-base font-bold text-white mb-4">Account Profile</h3>
+            <div class="space-y-3 text-xs">
+                <div>
+                    <span class="text-slate-400 block mb-0.5">Username</span>
+                    <span id="profUsername" class="font-bold text-slate-100"></span>
+                </div>
+                <div>
+                    <span class="text-slate-400 block mb-0.5">Display Name</span>
+                    <span id="profDisplayName" class="font-bold text-slate-100"></span>
+                </div>
+                <div>
+                    <span class="text-slate-400 block mb-0.5">Account Security Recovery Key</span>
+                    <span id="profRecoveryKey" class="font-mono text-indigo-400 select-all font-bold"></span>
+                </div>
+            </div>
+            <div class="mt-6 pt-4 border-t border-slate-700 flex justify-end">
+                <button onclick="handleLogout()" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-semibold">Sign Out</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const state = {
+            currentUser: null,
+            viewMode: 'dms',
+            guilds: [],
+            activeGuild: null,
+            activeChannel: null,
+            activeDmUser: null,
+            messages: [],
+            ws: null
+        };
+
+        function initApp() {
+            checkAuth();
+        }
+
+        async function checkAuth() {
+            try {
+                const res = await fetch('/api/me');
+                if (res.ok) {
+                    state.currentUser = await res.json();
+                    updateUserFooter();
+                    await loadGuilds();
+                    initWebSocket();
+                    openDmView();
+                } else {
+                    state.currentUser = null;
+                    updateUserFooter();
+                    openAuthModal();
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function initWebSocket() {
+            if (state.ws) {
+                try { state.ws.close(); } catch(e) {}
+            }
+            const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            state.ws = new WebSocket(`${proto}//${window.location.host}/ws/gateway`);
+            state.ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                if (data.type === 'channel_message' && state.activeChannel && data.channel_id === state.activeChannel.id) {
+                    appendMessage(data);
+                } else if (data.type === 'direct_message') {
+                    if (state.viewMode === 'dms' && state.activeDmUser && (data.sender.username === state.activeDmUser || data.recipient.username === state.activeDmUser)) {
+                        appendMessage(data);
+                    }
+                }
+            };
+        }
+
+        function updateUserFooter() {
+            const footerAvatar = document.getElementById('footerAvatar');
+            const footerDisplay = document.getElementById('footerDisplayName');
+            const footerUser = document.getElementById('footerUsername');
+            const footerActions = document.getElementById('footerActions');
+
+            if (state.currentUser) {
+                footerAvatar.textContent = state.currentUser.username[0].toUpperCase();
+                footerAvatar.style.backgroundColor = state.currentUser.avatar_color || '#6366f1';
+                footerDisplay.textContent = state.currentUser.display_name;
+                footerUser.textContent = `@${state.currentUser.username}`;
+                footerActions.innerHTML = `
+                    <button onclick="handleLogout()" title="Sign Out" class="p-1.5 hover:text-white rounded hover:bg-slate-700/60 transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                    </button>
+                `;
+            } else {
+                footerAvatar.textContent = '?';
+                footerAvatar.style.backgroundColor = '#4f46e5';
+                footerDisplay.textContent = 'Guest';
+                footerUser.textContent = 'Not signed in';
+                footerActions.innerHTML = `<button onclick="openAuthModal()" class="px-2.5 py-1 text-xs font-medium bg-discord-blurple text-white rounded">Sign In</button>`;
+            }
+        }
+
+        async function loadGuilds() {
+            const res = await fetch('/api/guilds');
+            if (res.ok) {
+                state.guilds = await res.json();
+                renderGuildNav();
+            }
+        }
+
+        function renderGuildNav() {
+            const container = document.getElementById('guildNavList');
+            container.innerHTML = state.guilds.map(g => `
+                <button onclick="selectGuild('${g.slug}')" class="w-12 h-12 rounded-3xl hover:rounded-2xl transition-all duration-200 flex items-center justify-center font-bold text-white shadow-md group relative" style="background-color: ${g.icon_color || '#8b5cf6'}">
+                    <span>${g.name.substring(0, 2).toUpperCase()}</span>
+                    <span class="absolute left-16 bg-slate-900 text-white text-xs px-2.5 py-1 rounded-md shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">${escapeHtml(g.name)}</span>
+                </button>
+            `).join('');
+        }
+
+        async function selectGuild(slug) {
+            state.viewMode = 'guild';
+            document.getElementById('btnNavDms').classList.remove('rounded-2xl');
+            document.getElementById('btnNavDms').classList.add('rounded-3xl');
+
+            const res = await fetch(`/api/guilds/${slug}`);
+            if (!res.ok) return;
+            const data = await res.json();
+            state.activeGuild = data;
+
+            document.getElementById('sidebarTitle').textContent = data.guild.name;
+            document.getElementById('sidebarHeaderActions').innerHTML = `
+                <button onclick="openInviteCodeModal()" title="Create Server Invite" class="text-slate-400 hover:text-white p-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+                </button>
+            `;
+
+            renderGuildChannels();
+            if (data.channels && data.channels.length > 0) {
+                selectChannel(data.channels[0].id);
+            }
+        }
+
+        function renderGuildChannels() {
+            const container = document.getElementById('sidebarContent');
+            const canAdd = state.activeGuild.my_role === 'owner' || state.activeGuild.my_role === 'admin';
+
+            container.innerHTML = `
+                <div>
+                    <div class="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase tracking-wider px-2 mb-1">
+                        <span>Text Channels</span>
+                        ${canAdd ? '<button onclick="openCreateChannelModal()" class="hover:text-white"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg></button>' : ''}
+                    </div>
+                    <div class="space-y-0.5">
+                        ${state.activeGuild.channels.map(c => `
+                            <button onclick="selectChannel(${c.id})" id="btnChannel-${c.id}" class="w-full text-left px-2 py-1.5 rounded text-sm flex items-center space-x-2 text-slate-400 hover:bg-discord-hover hover:text-slate-200 transition">
+                                <span class="text-slate-500 font-bold">${c.is_private ? '🔒' : '#'}</span>
+                                <span class="truncate">${escapeHtml(c.name)}</span>
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <div>
+                    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-2 mb-1">
+                        <span>Members — ${state.activeGuild.members.length}</span>
+                    </div>
+                    <div class="space-y-1">
+                        ${state.activeGuild.members.map(m => `
+                            <div class="flex items-center space-x-2 px-2 py-1 rounded text-xs text-slate-300">
+                                <div class="w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] text-white" style="background-color: ${m.avatar_color || '#6366f1'}">
+                                    ${m.username[0].toUpperCase()}
+                                </div>
+                                <span class="truncate">${escapeHtml(m.display_name)}</span>
+                                ${m.role === 'owner' ? '<span class="text-[10px] px-1 bg-amber-500/20 text-amber-300 rounded">Owner</span>' : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        async function selectChannel(channelId) {
+            const ch = state.activeGuild.channels.find(c => c.id === channelId);
+            if (!ch) return;
+            state.activeChannel = ch;
+
+            document.querySelectorAll('[id^="btnChannel-"]').forEach(el => el.classList.remove('bg-discord-active', 'text-white'));
+            const activeBtn = document.getElementById(`btnChannel-${channelId}`);
+            if (activeBtn) {
+                activeBtn.classList.add('bg-discord-active', 'text-white');
+            }
+
+            document.getElementById('chatTypeIcon').textContent = ch.is_private ? '🔒' : '#';
+            document.getElementById('chatActiveName').textContent = ch.name;
+            document.getElementById('chatActiveTopic').textContent = ch.topic || '';
+            document.getElementById('messageInput').placeholder = `Message ${ch.is_private ? '🔒 ' : '#'}${ch.name}`;
+
+            if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+                state.ws.send(JSON.stringify({ action: 'subscribe_channel', channel_id: channelId }));
+            }
+
+            const res = await fetch(`/api/channels/${channelId}/messages`);
+            if (res.ok) {
+                state.messages = await res.json();
+                renderMessages();
+            }
+        }
+
+        async function openDmView() {
+            state.viewMode = 'dms';
+            state.activeGuild = null;
+            state.activeChannel = null;
+
+            document.getElementById('sidebarTitle').textContent = 'Direct Messages';
+            document.getElementById('sidebarHeaderActions').innerHTML = '';
+            document.getElementById('chatTypeIcon').textContent = '@';
+            document.getElementById('chatActiveName').textContent = 'Direct Messages';
+            document.getElementById('chatActiveTopic').textContent = 'Direct private message channels';
+            document.getElementById('messageInput').placeholder = 'Select a conversation...';
+
+            await loadDmsList();
+        }
+
+        async function loadDmsList() {
+            const res = await fetch('/api/dms');
+            if (!res.ok) return;
+            const dms = await res.json();
+
+            const container = document.getElementById('sidebarContent');
+            container.innerHTML = `
+                <div class="px-2 mb-2">
+                    <button onclick="promptNewDm()" class="w-full py-1.5 px-3 bg-discord-blurple hover:bg-indigo-600 text-white rounded text-xs font-semibold flex items-center justify-center space-x-1 transition shadow">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        <span>Start Conversation</span>
+                    </button>
+                </div>
+                <div class="space-y-0.5">
+                    ${dms.map(u => `
+                        <button onclick="selectDm('${u.username}')" id="btnDm-${u.username}" class="w-full text-left px-2 py-2 rounded text-sm flex items-center space-x-2 text-slate-400 hover:bg-discord-hover hover:text-slate-200 transition">
+                            <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white" style="background-color: ${u.avatar_color || '#6366f1'}">
+                                ${u.username[0].toUpperCase()}
+                            </div>
+                            <div class="overflow-hidden leading-tight">
+                                <p class="text-xs font-semibold text-slate-200 truncate">${escapeHtml(u.display_name)}</p>
+                                <p class="text-[10px] text-slate-500 truncate">@${u.username}</p>
+                            </div>
+                        </button>
+                    `).join('')}
+                </div>
+            `;
+
+            if (dms.length > 0 && !state.activeDmUser) {
+                selectDm(dms[0].username);
+            }
+        }
+
+        async function selectDm(username) {
+            state.activeDmUser = username;
+            document.querySelectorAll('[id^="btnDm-"]').forEach(el => el.classList.remove('bg-discord-active', 'text-white'));
+            const btn = document.getElementById(`btnDm-${username}`);
+            if (btn) btn.classList.add('bg-discord-active', 'text-white');
+
+            document.getElementById('chatTypeIcon').textContent = '@';
+            document.getElementById('chatActiveName').textContent = username;
+            document.getElementById('chatActiveTopic').textContent = `Direct conversation with @${username}`;
+            document.getElementById('messageInput').placeholder = `Message @${username}`;
+
+            const res = await fetch(`/api/dms/${username}`);
+            if (res.ok) {
+                state.messages = await res.json();
+                renderMessages();
+            }
+        }
+
+        function promptNewDm() {
+            const user = prompt("Enter username to direct message:");
+            if (user && user.trim()) {
+                selectDm(user.trim());
+            }
+        }
+
+        function renderMessages() {
+            const container = document.getElementById('messagesContainer');
+            if (!state.messages || state.messages.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-20 text-slate-500 text-sm">
+                        <p>No messages yet. Say hello!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = state.messages.map(m => `
+                <div class="flex items-start space-x-3 group hover:bg-[#32353b] -mx-4 px-4 py-1.5 transition rounded">
+                    <div class="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm text-white shrink-0 mt-0.5" style="background-color: ${m.avatar_color || '#6366f1'}">
+                        ${(m.sender_username || (m.sender && m.sender.username) || '?')[0].toUpperCase()}
+                    </div>
+                    <div class="flex-1 overflow-hidden">
+                        <div class="flex items-baseline space-x-2">
+                            <span class="font-bold text-sm text-white">${escapeHtml(m.sender_name || (m.sender && m.sender.display_name) || m.sender_username || 'Member')}</span>
+                            <span class="text-[10px] text-slate-500">${m.created_at || 'Just now'}</span>
+                        </div>
+                        <p class="text-sm text-slate-300 leading-relaxed break-words mt-0.5">${escapeHtml(m.content)}</p>
+                    </div>
+                </div>
+            `).join('');
+
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function appendMessage(msg) {
+            state.messages.push(msg);
+            renderMessages();
+        }
+
+        async function handleSendMessage(e) {
+            e.preventDefault();
+            const input = document.getElementById('messageInput');
+            const content = input.value.trim();
+            if (!content) return;
+            input.value = '';
+
+            const body = new URLSearchParams({ content });
+
+            if (state.viewMode === 'guild' && state.activeChannel) {
+                await fetch(`/api/channels/${state.activeChannel.id}/messages`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: body.toString()
+                });
+            } else if (state.viewMode === 'dms' && state.activeDmUser) {
+                const res = await fetch(`/api/dms/${state.activeDmUser}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: body.toString()
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    appendMessage(data.message);
+                }
+            }
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const u = document.getElementById('loginUsername').value;
+            const p = document.getElementById('loginPassword').value;
+            const body = new URLSearchParams({ username: u, password: p });
+
+            const res = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: body.toString()
+            });
+
+            if (res.ok) {
+                closeModal('authModal');
+                checkAuth();
+            } else {
+                alert('Invalid credentials');
+            }
+        }
+
+        async function handleRegister(e) {
+            e.preventDefault();
+            const u = document.getElementById('regUsername').value;
+            const d = document.getElementById('regDisplayName').value;
+            const p = document.getElementById('regPassword').value;
+            const body = new URLSearchParams({ username: u, password: p, display_name: d });
+
+            const res = await fetch('/api/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: body.toString()
+            });
+
+            if (res.ok) {
+                closeModal('authModal');
+                checkAuth();
+            } else {
+                alert('Registration failed. Username may already exist.');
+            }
+        }
+
+        async function handleLogout() {
+            await fetch('/api/logout', { method: 'POST' });
+            closeModal('profileModal');
+            state.currentUser = null;
+            updateUserFooter();
+            openAuthModal();
+        }
+
+        async function handleRecover(e) {
+            e.preventDefault();
+            const u = document.getElementById('recoverUsername').value;
+            const k = document.getElementById('recoverKey').value;
+            const body = new URLSearchParams({ username: u, recovery_key: k });
+
+            const res = await fetch('/api/recover', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: body.toString()
+            });
+
+            const out = document.getElementById('recoverResult');
+            out.classList.remove('hidden');
+            if (res.ok) {
+                const data = await res.json();
+                out.className = "mt-4 p-3 rounded-lg bg-emerald-950/60 border border-emerald-500/30 text-xs text-emerald-200";
+                out.innerHTML = `<strong>Identity Confirmed!</strong><br>User ID: #${data.user.id}<br>Username: ${data.user.username}<br>Key: ${data.user.recovery_key}`;
+            } else {
+                out.className = "mt-4 p-3 rounded-lg bg-rose-950/60 border border-rose-500/30 text-xs text-rose-200";
+                out.textContent = "Recovery failed: Invalid recovery key.";
+            }
+        }
+
+        async function handleCreateGuild(e) {
+            e.preventDefault();
+            const name = document.getElementById('guildNameInput').value;
+            const body = new URLSearchParams({ name });
+
+            const res = await fetch('/api/guilds', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: body.toString()
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                closeModal('createGuildModal');
+                await loadGuilds();
+                selectGuild(data.slug);
+            }
+        }
+
+        async function handleCreateChannel(e) {
+            e.preventDefault();
+            if (!state.activeGuild) return;
+            const name = document.getElementById('channelNameInput').value;
+            const topic = document.getElementById('channelTopicInput').value;
+            const isPrivate = document.getElementById('channelPrivateInput').checked;
+
+            const body = new URLSearchParams({
+                name,
+                topic,
+                is_private: isPrivate ? "true" : "false"
+            });
+
+            const res = await fetch(`/api/guilds/${state.activeGuild.guild.id}/channels`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: body.toString()
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                closeModal('createChannelModal');
+                await selectGuild(state.activeGuild.guild.slug);
+                selectChannel(data.channel_id);
+            }
+        }
+
+        async function openInviteCodeModal() {
+            if (!state.activeGuild) return;
+            const res = await fetch(`/api/guilds/${state.activeGuild.guild.id}/invites`, { method: 'POST' });
+            if (res.ok) {
+                const data = await res.json();
+                prompt("Share this Server Invite Code with members:", data.code);
+            }
+        }
+
+        async function handleJoinInvite(e) {
+            e.preventDefault();
+            const code = document.getElementById('joinInviteInput').value.trim();
+            const res = await fetch(`/api/invites/${code}/join`, { method: 'POST' });
+            if (res.ok) {
+                const data = await res.json();
+                closeModal('joinModal');
+                await loadGuilds();
+                selectGuild(data.guild.slug);
+            } else {
+                alert('Invalid invite code');
+            }
+        }
+
+        async function handleUnfurlPreview(e) {
+            e.preventDefault();
+            const url = document.getElementById('unfurlUrlInput').value.trim();
+            const body = new URLSearchParams({ url });
+
+            const out = document.getElementById('unfurlOutput');
+            out.classList.remove('hidden');
+            out.textContent = "Fetching link preview metadata...";
+
+            try {
+                const res = await fetch('/api/preview', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: body.toString()
+                });
+                const data = await res.json();
+                if (data.error) {
+                    out.innerHTML = `<span class="text-rose-400 font-semibold">Error:</span> ${escapeHtml(data.error)}`;
+                } else {
+                    out.innerHTML = `
+                        <div class="space-y-1">
+                            <p class="font-bold text-white text-sm">${escapeHtml(data.title || 'Untitled')}</p>
+                            <p class="text-slate-400">${escapeHtml(data.description || 'No description provided')}</p>
+                            <span class="text-[10px] text-indigo-400 block truncate">${escapeHtml(data.url)}</span>
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                out.innerHTML = `<span class="text-rose-400">Network error fetching preview</span>`;
+            }
+        }
+
+        function openAuthModal() {
+            document.getElementById('authModal').classList.remove('hidden');
+        }
+        function openRecoverModal() {
+            closeModal('authModal');
+            document.getElementById('recoverModal').classList.remove('hidden');
+        }
+        function openCreateGuildModal() {
+            if (!state.currentUser) return openAuthModal();
+            document.getElementById('createGuildModal').classList.remove('hidden');
+        }
+        function openCreateChannelModal() {
+            document.getElementById('createChannelModal').classList.remove('hidden');
+        }
+        function openJoinModal() {
+            if (!state.currentUser) return openAuthModal();
+            document.getElementById('joinModal').classList.remove('hidden');
+        }
+        function openUnfurlModal() {
+            document.getElementById('unfurlOutput').classList.add('hidden');
+            document.getElementById('unfurlModal').classList.remove('hidden');
+        }
+        function openProfileModal() {
+            if (!state.currentUser) return openAuthModal();
+            document.getElementById('profUsername').textContent = state.currentUser.username;
+            document.getElementById('profDisplayName').textContent = state.currentUser.display_name;
+            document.getElementById('profRecoveryKey').textContent = state.currentUser.recovery_key;
+            document.getElementById('profileModal').classList.remove('hidden');
+        }
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+        function setAuthTab(tab) {
+            if (tab === 'login') {
+                document.getElementById('tabLogin').className = 'flex-1 py-1.5 text-xs font-semibold rounded-lg bg-discord-blurple text-white';
+                document.getElementById('tabRegister').className = 'flex-1 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white';
+                document.getElementById('formLogin').classList.remove('hidden');
+                document.getElementById('formRegister').classList.add('hidden');
+            } else {
+                document.getElementById('tabRegister').className = 'flex-1 py-1.5 text-xs font-semibold rounded-lg bg-discord-blurple text-white';
+                document.getElementById('tabLogin').className = 'flex-1 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white';
+                document.getElementById('formRegister').classList.remove('hidden');
+                document.getElementById('formLogin').classList.add('hidden');
+            }
+        }
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        window.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>

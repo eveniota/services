@@ -1,0 +1,24 @@
+services:
+  pulsechat-checker:
+    build: .
+    container_name: pulsechat-checker
+    ports:
+      - "18001:8000"
+    environment:
+      - MONGO_HOST=pulsechat-mongo
+      - MONGO_PORT=27017
+      - MONGO_USER=pulsechat
+      - MONGO_PASSWORD=pulsechat
+    depends_on:
+      - pulsechat-mongo
+    restart: unless-stopped
+
+  pulsechat-mongo:
+    image: mongo:7
+    container_name: pulsechat-mongo
+    volumes:
+      - ./data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: pulsechat
+      MONGO_INITDB_ROOT_PASSWORD: pulsechat
+    restart: unless-stopped

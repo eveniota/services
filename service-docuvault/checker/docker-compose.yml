@@ -1,0 +1,24 @@
+services:
+  docuvault-checker:
+    build: .
+    container_name: docuvault-checker
+    ports:
+      - "18000:8000"
+    environment:
+      - MONGO_HOST=docuvault-mongo
+      - MONGO_PORT=27017
+      - MONGO_USER=docuvault
+      - MONGO_PASSWORD=docuvault
+    depends_on:
+      - docuvault-mongo
+    restart: unless-stopped
+
+  docuvault-mongo:
+    image: mongo:7
+    container_name: docuvault-mongo
+    volumes:
+      - ./data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: docuvault
+      MONGO_INITDB_ROOT_PASSWORD: docuvault
+    restart: unless-stopped
